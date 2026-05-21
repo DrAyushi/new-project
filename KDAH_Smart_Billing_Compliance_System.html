@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KDAH — Smart Billing Compliance System</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;font-family:'Inter',sans-serif;font-size:13px;background:#f8fafc;color:#1e293b;}
+:root{
+  --m:#8b1a2f;--m2:#6b1323;--m3:#4a0d18;
+  --gold:#c8952a;--gold2:#e8b84b;
+  --cream:#f5ede6;--warm:#ede0d4;
+  --border:#e2d5cc;--b2:#cfc0b4;
+  --ink2:#3d2e28;--ink3:#7a6860;--ink4:#b8a89e;
+  --tpa:#1e5fa8;--tpabg:#eff6ff;--tpabd:#bfdbfe;--tpad:#1d4ed8;
+  --pat:#15803d;--patbg:#f0fdf4;--patbd:#bbf7d0;
+  --amb:#d97706;--ambbg:#fffbeb;--ambbd:#fde68a;
+  --red:#dc2626;--redbg:#fef2f2;--redbd:#fecaca;
+  --mono:'JetBrains Mono',monospace;
+}
+
+/* ── MASTHEAD ─────────────────────────────────────────── */
+.mh{background:linear-gradient(135deg,var(--m3) 0%,var(--m) 65%,#a0243c 100%);color:#fff;flex-shrink:0;}
+.mh-top{display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,.12);flex-wrap:wrap;}
+.mh-brand{padding:12px 20px;border-right:1px solid rgba(255,255,255,.12);}
+.mh-dots{display:flex;gap:5px;margin-bottom:5px;}
+.dot{width:8px;height:8px;border-radius:50%;}
+.mh-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;line-height:1.2;}
+.mh-sub{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.mh-mid{padding:12px 18px;border-right:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;justify-content:center;}
+.mh-mid-lbl{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px;}
+.mh-mid-title{font-size:13px;font-weight:600;}
+.mh-actions{margin-left:auto;padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.mh-date{font-size:10px;color:rgba(255,255,255,.4);font-family:var(--mono);}
+.btn-mh{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:500;padding:5px 13px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+.btn-mh:hover{background:rgba(255,255,255,.1);}
+.btn-mh.gold{background:var(--gold);border-color:var(--gold);color:var(--m3);font-weight:600;}
+.btn-mh.gold:hover{background:var(--gold2);}
+
+/* ── MAIN NAV TABS ────────────────────────────────────── */
+.nav{display:flex;background:var(--m2);}
+.ntab{padding:9px 18px;font-size:12px;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;border:none;background:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;font-family:'Inter',sans-serif;letter-spacing:.02em;}
+.ntab:hover{color:rgba(255,255,255,.8);}
+.ntab.on{color:#fff;border-bottom-color:var(--gold);}
+.nbadge{display:inline-block;background:rgba(255,255,255,.12);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;font-weight:600;vertical-align:middle;}
+.ntab.on .nbadge{background:var(--gold);color:var(--m3);}
+
+/* ── PATIENT STRIP ────────────────────────────────────── */
+.pstrip{background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+.pf{display:flex;flex-direction:column;gap:2px;}
+.pf label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:600;}
+.pf input,.pf select{font-family:'Inter',sans-serif;font-size:12px;border:1px solid #d1d5db;border-radius:4px;padding:4px 8px;background:#f8fafc;color:#1e293b;outline:none;min-width:110px;}
+.pf input:focus,.pf select:focus{border-color:var(--m);}
+.pf.w input,.pf.w select{min-width:160px;}
+
+/* ── PAGE SYSTEM ──────────────────────────────────────── */
+.pg{display:none;}
+.pg.on{display:block;}
+
+/* ══════════════════════════════════════════════════════
+   PAGE 1 — SMART BILLING
+══════════════════════════════════════════════════════ */
+.billing-wrap{display:flex;flex-direction:column;}
+.billing-main{display:flex;min-height:0;}
+
+/* PICKER */
+.picker{width:340px;flex-shrink:0;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;}
+.picker-hd{background:var(--cream);padding:10px 11px 8px;border-bottom:1px solid #e2e8f0;}
+.picker-title{font-size:11.5px;font-weight:600;color:var(--m);margin-bottom:6px;}
+.sw{position:relative;}
+.sw input{width:100%;font-size:12px;border:1px solid #d1d5db;border-radius:5px;padding:6px 10px 6px 28px;outline:none;background:#fff;font-family:'Inter',sans-serif;}
+.sw input:focus{border-color:var(--m);}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:#94a3b8;}
+.ftabs{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap;}
+.ft{font-size:9.5px;font-weight:600;padding:3px 8px;border-radius:3px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;color:#64748b;transition:all .1s;white-space:nowrap;}
+.ft.on{background:var(--m);color:#fff;border-color:var(--m);}
+.ft.ft-tpa.on{background:var(--tpad);border-color:var(--tpad);}
+.ft.ft-pat.on{background:var(--pat);border-color:var(--pat);}
+.ft.ft-prt.on{background:var(--amb);border-color:var(--amb);}
+.ft.ft-dsp.on{background:var(--red);border-color:var(--red);}
+.plist{overflow-y:auto;flex:1;padding:4px;max-height:calc(100vh - 260px);}
+.cg{margin-bottom:2px;}
+.clbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;padding:7px 6px 3px;display:flex;align-items:center;gap:6px;}
+.clbl::after{content:'';flex:1;height:1px;background:#e2e8f0;}
+.mi{display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:5px;cursor:pointer;border:1px solid transparent;margin-bottom:1px;transition:all .1s;}
+.mi:hover{background:var(--cream);}
+.mi.s-tpa{background:var(--tpabg);border-color:var(--tpabd);}
+.mi.s-pat{background:var(--patbg);border-color:var(--patbd);}
+.mi.s-prt{background:var(--ambbg);border-color:var(--ambbd);}
+.mi.s-dsp{background:var(--redbg);border-color:var(--redbd);}
+.rc{width:18px;height:18px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;}
+.rc-tpa{background:var(--tpad);}
+.rc-pat{background:var(--pat);}
+.rc-prt{background:var(--amb);}
+.rc-dsp{background:var(--red);}
+.mi-name{flex:1;font-size:11.5px;line-height:1.35;color:#3f3f46;}
+.mi-note{display:block;font-size:9.5px;color:#94a3b8;margin-top:1px;}
+.mi-add{background:none;border:1px solid #e2e8f0;border-radius:4px;color:#94a3b8;font-size:15px;width:23px;height:23px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s;}
+.mi:hover .mi-add{border-color:var(--m);color:var(--m);}
+.mi.s-tpa .mi-add{background:var(--tpad);border-color:var(--tpad);color:#fff;font-size:11px;}
+.mi.s-pat .mi-add{background:var(--pat);border-color:var(--pat);color:#fff;font-size:11px;}
+.mi.s-prt .mi-add,.mi.s-dsp .mi-add{background:var(--m);border-color:var(--m);color:#fff;font-size:11px;}
+
+/* BILLS */
+.bills{flex:1;display:flex;flex-direction:column;min-width:0;}
+.bills-grid{display:grid;grid-template-columns:1fr 1fr;}
+.bp{display:flex;flex-direction:column;border-left:1px solid #e2e8f0;}
+.bp+.bp{border-left:1px solid #e2e8f0;}
+.bp-hd{padding:8px 12px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:7px;}
+.bp-hd.tpa{background:var(--tpabg);}
+.bp-hd.pat{background:var(--patbg);}
+.bpico{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.bpico.tpa{background:var(--tpad);color:#fff;}
+.bpico.pat{background:var(--pat);color:#fff;}
+.bp-title{font-size:12px;font-weight:600;}
+.bp-title.tpa{color:var(--tpad);}
+.bp-title.pat{color:var(--pat);}
+.bp-sub{font-size:9.5px;color:#64748b;}
+.bp-cnt{margin-left:auto;font-size:10px;color:#94a3b8;font-family:var(--mono);}
+.bp-items{padding:4px;min-height:120px;max-height:calc(100vh - 360px);overflow-y:auto;}
+.bempty{padding:20px 10px;text-align:center;color:#94a3b8;font-size:11px;line-height:1.7;}
+.brow{display:grid;grid-template-columns:1fr 48px 74px 18px;gap:4px;align-items:center;padding:5px;border-radius:4px;font-size:11.5px;margin-bottom:2px;border:1px solid transparent;}
+.brow:hover{background:#f8fafc;border-color:#e2e8f0;}
+.brow-name{color:#3f3f46;line-height:1.3;}
+.brow-cat{display:block;font-size:9px;color:#94a3b8;margin-top:1px;}
+.bqty,.bamt{font-family:var(--mono);font-size:11px;text-align:center;border:1px solid #d1d5db;border-radius:3px;padding:3px 4px;background:#f8fafc;width:100%;outline:none;}
+.bamt{text-align:right;}
+.bqty:focus,.bamt:focus{border-color:var(--m);}
+.brm{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:12px;padding:1px;border-radius:2px;}
+.brm:hover{color:var(--red);}
+.bp-foot{border-top:1px solid #e2e8f0;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;}
+.bp-foot-lbl{font-size:11px;color:#64748b;}
+.bp-foot-val{font-family:var(--mono);font-size:14px;font-weight:500;}
+.bp-foot-val.tpa{color:var(--tpad);}
+.bp-foot-val.pat{color:var(--pat);}
+
+/* SUMMARY BAR */
+.sbar{background:#0f172a;color:#fff;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid rgba(0,0,0,.2);}
+.sc{padding:9px 13px;border-right:1px solid rgba(255,255,255,.08);}
+.sc:last-child{border-right:none;}
+.sc-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.4);margin-bottom:3px;}
+.sc-val{font-family:var(--mono);font-size:14px;font-weight:500;color:#fff;}
+.sc-val.tpa{color:#93c5fd;}
+.sc-val.pat{color:#86efac;}
+.sc-val.gold{color:#fbbf24;}
+.sc-val.red{color:#fca5a5;}
+.sc-sub{font-size:9px;color:rgba(255,255,255,.3);margin-top:1px;}
+.copay-inp{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.2);color:#fbbf24;font-family:var(--mono);font-size:14px;width:85px;outline:none;padding:1px 0;}
+
+/* ══════════════════════════════════════════════════════
+   PAGE 2 — IRDAI GUIDE (from original file 1)
+══════════════════════════════════════════════════════ */
+.guide-topbar{background:#0f172a;color:#fff;padding:14px 18px;}
+.guide-topbar h1{font-size:14px;font-weight:700;}
+.guide-topbar p{font-size:10px;color:#94a3b8;margin-top:3px;}
+.guide-legend{display:flex;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;}
+.ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ldot-g{background:#16a34a;}
+.ldot-a{background:#f59e0b;}
+.ldot-r{background:#ef4444;}
+.ins-tabs{display:flex;gap:2px;padding:10px 16px 0;background:#fff;border-bottom:1px solid #e2e8f0;overflow-x:auto;}
+.ins-tab{padding:7px 13px;font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:#64748b;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;font-family:'Inter',sans-serif;}
+.ins-tab.active{color:#1e40af;border-bottom-color:#1e40af;}
+.iview{display:none;padding:14px 16px;}
+.iview.active{display:block;}
+.ins-hdr{font-size:13px;font-weight:700;padding:10px 14px;border-radius:8px 8px 0 0;color:#fff;}
+.ins-card{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:18px;}
+.col-hdrs{display:grid;grid-template-columns:2fr 1fr 1.5fr;background:#f1f5f9;border-bottom:1px solid #e2e8f0;}
+.col-h{padding:7px 12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;}
+.item-row{display:grid;grid-template-columns:2fr 1fr 1.5fr;border-bottom:1px solid #f8fafc;}
+.item-row:last-child{border-bottom:none;}
+.item-row:hover{background:#fafafa;}
+.cell{padding:7px 12px;font-size:11px;line-height:1.5;}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;}
+.badge-g{background:#dcfce7;color:#166534;}
+.badge-r{background:#fee2e2;color:#b91c1c;}
+.badge-a{background:#fef3c7;color:#92400e;}
+.act-g{font-size:10px;color:#15803d;line-height:1.5;}
+.act-r{font-size:10px;color:#b91c1c;line-height:1.5;}
+.act-a{font-size:10px;color:#92400e;line-height:1.5;}
+.sum-boxes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+.sbox{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px;}
+.sbox-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.sbox-list{list-style:none;}
+.sbox-list li{font-size:11px;padding:3px 0;border-bottom:1px dashed #f1f5f9;display:flex;align-items:flex-start;gap:6px;line-height:1.5;}
+.sbox-list li::before{content:'•';flex-shrink:0;}
+.li-g::before{color:#16a34a;}
+.li-r::before{color:#ef4444;}
+.li-a::before{color:#f59e0b;}
+
+/* ══════════════════════════════════════════════════════
+   MODAL & TOAST
+══════════════════════════════════════════════════════ */
+.mveil{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;}
+.mveil.open{display:flex;}
+.mbox{background:#fff;border-radius:10px;padding:1.4rem;max-width:420px;width:90%;border-top:4px solid var(--m);box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.mbox h3{font-family:'Playfair Display',serif;font-size:16px;margin-bottom:7px;}
+.mnote{border-radius:5px;padding:8px 11px;font-size:11px;line-height:1.6;margin-bottom:1rem;background:var(--ambbg);color:var(--amb);border:1px solid var(--ambbd);}
+.mq{font-size:12.5px;color:#3f3f46;margin-bottom:.85rem;}
+.mbtns{display:flex;gap:7px;}
+.mbtn{flex:1;padding:8px;border-radius:5px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;transition:all .12s;font-family:'Inter',sans-serif;}
+.mbtn.tpa{background:var(--tpabg);color:var(--tpad);border:1px solid var(--tpabd);}
+.mbtn.tpa:hover{background:var(--tpad);color:#fff;}
+.mbtn.pat{background:var(--patbg);color:var(--pat);border:1px solid var(--patbd);}
+.mbtn.pat:hover{background:var(--pat);color:#fff;}
+.mbtn.cx{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;}
+.toast{position:fixed;bottom:18px;right:16px;background:#0f172a;color:#fff;font-size:11px;padding:8px 13px;border-radius:7px;border-left:3px solid var(--gold);z-index:999;font-family:var(--mono);max-width:300px;line-height:1.45;opacity:0;pointer-events:none;transition:opacity .2s;}
+.toast.show{opacity:1;}
+
+@media print{
+  .mh-actions,.nav,.pstrip button,.picker,.sbar,.btn-mh,.ftabs,.sw,.mi-add,.brm,.ins-tabs{display:none!important;}
+  .billing-main{display:block;}
+  .bills-grid{display:grid;grid-template-columns:1fr 1fr;}
+  .bp-items{overflow:visible;max-height:none;}
+  .bqty,.bamt{border:none;background:transparent;}
+  body{background:#fff;}
+}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<div class="mh">
+  <div class="mh-top">
+    <div class="mh-brand">
+      <div class="mh-dots">
+        <div class="dot" style="background:#e85d7a"></div>
+        <div class="dot" style="background:#f4a623"></div>
+        <div class="dot" style="background:#4caf82"></div>
+        <div class="dot" style="background:#5b9bd5"></div>
+        <div class="dot" style="background:#9c6dd4"></div>
+      </div>
+      <div class="mh-name">Kokilaben Dhirubhai Ambani Hospital</div>
+      <div class="mh-sub">&amp; Medical Research Institute · Mumbai</div>
+    </div>
+    <div class="mh-mid">
+      <div class="mh-mid-lbl">Internal Tool</div>
+      <div class="mh-mid-title">Smart Billing Compliance System — IRDAI Non-Payables</div>
+    </div>
+    <div class="mh-actions">
+      <span class="mh-date" id="hdr-date"></span>
+      <button class="btn-mh" onclick="clearBill()">Clear Bill</button>
+      <button class="btn-mh gold" onclick="window.print()">🖨 Print Bills</button>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="ntab on" onclick="goPage('billing',this)">Smart Billing <span class="nbadge">LIVE</span></button>
+    <button class="ntab" onclick="goPage('guide',this)">IRDAI Action Guide <span class="nbadge">50 items</span></button>
+  </div>
+</div>
+
+<!-- PATIENT STRIP -->
+<div class="pstrip">
+  <div class="pf w"><label>Patient Name</label><input id="pn" type="text" placeholder="Full patient name"/></div>
+  <div class="pf"><label>UHID / IP No.</label><input id="pu" type="text" placeholder="IP-XXXXXX"/></div>
+  <div class="pf w"><label>Insurer / TPA</label>
+    <select id="pi" onchange="onInsurerChange()">
+      <option value="">Select insurer / TPA</option>
+      <option>Medi Assist (TPA)</option><option>Aditya Birla Health</option>
+      <option>HDFC ERGO</option><option>Oriental Insurance</option>
+      <option>United India</option><option>National Insurance</option>
+      <option>New India Assurance</option><option>Bajaj General</option>
+      <option>SBI General</option><option>ICICI Lombard</option>
+      <option>Care Health</option><option>Future Generali</option>
+      <option>Royal Sundaram</option><option>Zuno General</option>
+      <option>Zurich Kotak</option><option>Universal Sompo / MD India</option>
+      <option>Liberty General</option>
+    </select>
+  </div>
+  <div class="pf"><label>Policy No.</label><input id="pp" type="text" placeholder="Policy number"/></div>
+  <div class="pf"><label>Ward / Bed</label><input id="pw" type="text" placeholder="e.g. ICU-3"/></div>
+  <div class="pf"><label>Admission</label><input id="pa" type="date"/></div>
+  <div class="pf"><label>Discharge</label><input id="pd" type="date"/></div>
+</div>
+
+<!-- ══ PAGE 1: SMART BILLING ══ -->
+<div class="pg on" id="pg-billing">
+<div class="billing-wrap">
+
+  <!-- Insurer-specific alert bar -->
+  <div id="ins-alert" style="display:none;padding:6px 16px;font-size:11px;font-weight:500;border-bottom:1px solid #fde68a;background:#fffbeb;color:#92400e;"></div>
+
+  <div class="billing-main">
+    <!-- MASTER PICKER -->
+    <div class="picker">
+      <div class="picker-hd">
+        <div class="picker-title">📋 Master Item List — tap + to add to bill</div>
+        <div class="sw">
+          <span class="si">🔍</span>
+          <input type="text" id="psearch" placeholder="Search… syringe, gloves, OT, ICU…" oninput="filterP()"/>
+        </div>
+        <div class="ftabs">
+          <div class="ft on" onclick="setPF('all',this)">All</div>
+          <div class="ft ft-tpa" onclick="setPF('tpa',this)">TPA</div>
+          <div class="ft ft-pat" onclick="setPF('pat',this)">Patient</div>
+          <div class="ft ft-prt" onclick="setPF('partial',this)">⚠ Partial</div>
+          <div class="ft ft-dsp" onclick="setPF('dispute',this)">! Dispute</div>
+        </div>
+      </div>
+      <div class="plist" id="plist"></div>
+    </div>
+
+    <!-- BILLS -->
+    <div class="bills">
+      <div class="bills-grid">
+        <div class="bp">
+          <div class="bp-hd tpa">
+            <div class="bpico tpa">T</div>
+            <div style="flex:1"><div class="bp-title tpa">TPA / Insurance Bill</div><div class="bp-sub">Submit to insurer for reimbursement</div></div>
+            <span class="bp-cnt" id="tpa-cnt">0 items</span>
+          </div>
+          <div class="bp-items" id="tpa-items"><div class="bempty">Select items from master list →<br>TPA-payable items auto-route here</div></div>
+          <div class="bp-foot"><span class="bp-foot-lbl">TPA Claim Total</span><span class="bp-foot-val tpa" id="tpa-tot">₹0</span></div>
+        </div>
+        <div class="bp">
+          <div class="bp-hd pat">
+            <div class="bpico pat">P</div>
+            <div style="flex:1"><div class="bp-title pat">Patient Collection Bill</div><div class="bp-sub">Collect cash / card at discharge</div></div>
+            <span class="bp-cnt" id="pat-cnt">0 items</span>
+          </div>
+          <div class="bp-items" id="pat-items"><div class="bempty">IRDAI non-payable items auto-route here</div></div>
+          <div class="bp-foot"><span class="bp-foot-lbl">Patient Total</span><span class="bp-foot-val pat" id="pat-tot">₹0</span></div>
+        </div>
+      </div>
+      <div class="sbar">
+        <div class="sc"><div class="sc-lbl">TPA Claim</div><div class="sc-val tpa" id="s-tpa">₹0</div><div class="sc-sub" id="s-tpa-n">0 items</div></div>
+        <div class="sc"><div class="sc-lbl">Patient Collection</div><div class="sc-val pat" id="s-pat">₹0</div><div class="sc-sub" id="s-pat-n">0 items</div></div>
+        <div class="sc">
+          <div class="sc-lbl">Co-pay / Deductible</div>
+          <div class="sc-val gold" style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:11px;color:rgba(255,255,255,.3)">₹</span>
+            <input class="copay-inp" type="number" id="copay" placeholder="0" min="0" oninput="recalc()"/>
+          </div>
+          <div class="sc-sub">Enter if applicable</div>
+        </div>
+        <div class="sc"><div class="sc-lbl">Total Hospital Revenue</div><div class="sc-val gold" id="s-grand">₹0</div><div class="sc-sub">TPA + Patient</div></div>
+        <div class="sc"><div class="sc-lbl">Deductions Prevented</div><div class="sc-val red" id="s-prev">₹0</div><div class="sc-sub">Pre-routed correctly</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ PAGE 2: IRDAI GUIDE (original file 1 content) ══ -->
+<div class="pg" id="pg-guide">
+  <div class="guide-topbar">
+    <h1>Kokilaben — Insurance Non-Payable Items vs IRDAI Mapping</h1>
+    <p>Extracted from your 25 actual TPA settlement letters · Goal: Remove before billing → collect from patient → zero follow-up</p>
+  </div>
+  <div class="guide-legend">
+    <div class="leg"><div class="ldot ldot-g"></div> In IRDAI List → Remove from TPA bill, collect from patient at discharge</div>
+    <div class="leg"><div class="ldot ldot-a"></div> Partially in IRDAI / Insurer-specific → Verify policy, collect from patient</div>
+    <div class="leg"><div class="ldot ldot-r"></div> NOT in IRDAI → Dispute with insurer / Seek justification before removing</div>
+  </div>
+  <div class="ins-tabs" id="ins-tabs"></div>
+  <div id="ins-views"></div>
+</div>
+
+<!-- MODAL -->
+<div class="mveil" id="modal">
+  <div class="mbox">
+    <h3 id="modal-name">Item</h3>
+    <div class="mnote" id="modal-note"></div>
+    <div class="mq">For this patient, route this item to:</div>
+    <div class="mbtns">
+      <button class="mbtn tpa" onclick="resolveM('tpa')">→ TPA Bill</button>
+      <button class="mbtn pat" onclick="resolveM('pat')">→ Patient Bill</button>
+      <button class="mbtn cx" onclick="closeM()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── BILLING ITEMS DATA (from kokilaben_smart_billing.html) ──────────────
+const ALL_ITEMS=[
+  {id:'tpa01',name:'Consultation charges',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa02',name:'OT charges',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa03',name:'Surgeon / Specialist fee',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa04',name:'Anaesthesia charges',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa05',name:'Nursing charges',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa06',name:'ICU charges (per day)',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa07',name:'Room rent (as per policy)',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa08',name:'Medicines / drugs',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa09',name:'Implants / prosthetics',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa10',name:'Lab investigations',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa11',name:'Radiology / imaging (X-ray, CT, MRI)',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa12',name:'Blood & blood products',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa13',name:'Physiotherapy (inpatient)',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa14',name:'Ventilator charges',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa15',name:'Dialysis charges',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa16',name:'Chemotherapy drugs',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa17',name:'Endoscopy / procedure charges',cat:'TPA Payable',route:'tpa'},
+  {id:'tpa18',name:'Cardiology procedure charges',cat:'TPA Payable',route:'tpa'},
+  {id:'pat01',name:'CHG Handrub 500ml / Hand Rub / Hand Wash',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat02',name:'Examination Gloves / Latex Gloves / Gloves Powder Free',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat03',name:'Syringes — all types (2ml, 5ml, 10ml, 20ml, 50ml)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat04',name:'Needles — all gauges (16G, 18G, 22G, 23G, 24G, 26G)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat05',name:'Easy Bath Wet Wipes / Wipes',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat06',name:'Underpad Dignity 60×90cm / Bed Pan Liner',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat07',name:'Plain Sheet / Primewear (disposable bed linen)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat08',name:'Face Mask 3-ply / Surgical Mask',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat09',name:'Disposable Razor / Gallant Sologuard (pre-op shaving)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat10',name:'ECG Electrode / Solid Gel Disp Electrode Medico',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat11',name:'Digital Thermometer / RGB Microgen',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat12',name:'Spirometer 3-ball (Breathe Happy)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat13',name:'Urine Pot / Urine Bottle / Urometer / Measurex',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat14',name:'Nebulizer Mask Aero Mist Adult Romson',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat15',name:'Diaper Adult Velcro (Kosmo) / Incontinence products',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat16',name:'Alcohol Swabs Nanz',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat17',name:'Clipper Blade 9680 3M (pre-op shaving clipper)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat18',name:'Barber Service / Grooming charges',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat19',name:'Tea / Coffee / Beverages (patient & attendant)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat20',name:'Bisleri / Packaged Drinking Water',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat21',name:'Fresh Fruit Juice / Buttermilk / Coconut Water',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat22',name:'Vada Pav / Poha / Bread Pakoda / Extra Snacks',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat23',name:'Full Meal / beyond standard hospital diet',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat24',name:'Visitor Pass charges',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat25',name:'MRD Charges / Medical Record Documentation',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat26',name:'TPA Processing Charges',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat27',name:'Suction Set / IV Extension Set / Stopcock Romson',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat28',name:'Surgical Blade 11 Swan Marton',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat29',name:'Sterile Water 10ml Otsuka (irrigation / flush)',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat30',name:'Micropore Tape 2" 3M / Elastic Bandage / Band Aids',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat31',name:'Shaker Bottle for patient',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'pat32',name:'Gluco Test / Bedside Blood Glucose Test strips',cat:'IRDAI Non-Payable',route:'pat'},
+  {id:'prt01',name:'Tegaderm IV 3M (wound dressing)',cat:'Partial / Verify',route:'partial',note:'Standard Tegaderm = patient. Silver/hydrogel post-2024 may be TPA. Split if needed.'},
+  {id:'prt02',name:'Syringe Pump / Infusion Pump rental',cat:'Partial / Verify',route:'partial',note:'Device rental = patient. Drug infused via pump = TPA. Bill separately.'},
+  {id:'prt03',name:'Foley Catheter / Rusch Size 14',cat:'Partial / Verify',route:'partial',note:'Standard = patient. Specialised cardiac/complex catheter may be TPA post-2024.'},
+  {id:'prt04',name:'Safeset IV Set / Nexiva BD / IV Cannula',cat:'Partial / Verify',route:'partial',note:'Basic = patient. Specialised closed IV systems for complex cases may be TPA.'},
+  {id:'prt05',name:'Velfix / Opsite / Leukomed (wound care)',cat:'Partial / Verify',route:'partial',note:'Basic wound care = patient. Surgeon-prescribed post-surgical dressings may be TPA.'},
+  {id:'prt06',name:'Clinical Nutrition Consult / Dietician Pratiksha Kadam',cat:'Partial / Verify',route:'partial',note:'Usually patient. If treating clinical condition (post-bariatric, tube feeding) arguable as TPA.'},
+  {id:'prt07',name:'Polyflush 10ml NaCl 0.9% / NS 100ml Flexidrip',cat:'Partial / Verify',route:'partial',note:'Line maintenance flush = patient. Chemo delivery vehicle may be TPA — collect by default.'},
+  {id:'prt08',name:'Blood Tubing Pre-pump / Pressure Monitoring Line',cat:'Partial / Verify',route:'partial',note:'Standard = patient. Complex ICU/cardiac monitoring lines may be TPA post-2024.'},
+  {id:'prt09',name:'Camera Cover P777 (surgical endoscopy drape)',cat:'Partial / Verify',route:'partial',note:'Surgical drapes = IRDAI non-payable. Collect from patient.'},
+  {id:'prt10',name:'Ambulatory Glucose Monitoring (CGM sensor)',cat:'Partial / Verify',route:'partial',note:'Standard strips = patient. Ambulatory CGM debatable — collect from patient, dispute separately.'},
+  {id:'dsp01',name:'Disinfection / Flowtron Disinfection charges',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. Keep in TPA bill. Dispute if deducted — demand policy exclusion clause.'},
+  {id:'dsp02',name:'RMO / Duty Doctor / Medical Attendant charges',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. Keep in TPA. Dispute with duty doctor certificate and case notes.'},
+  {id:'dsp03',name:'Intensivist charges (ICU specialist daily)',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. Bill as separate consultant with NMC reg. Dispute if rejected.'},
+  {id:'dsp04',name:'Catheterisation fee — Dr. Bharat Jagiasi',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. Procedural professional fee = payable. Dispute with procedure notes.'},
+  {id:'dsp05',name:'Grouping & Cross Match (pre-op blood bank)',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. Medically necessary. Dispute — attach blood bank requisition.'},
+  {id:'dsp06',name:'Mitspro MCT Oil / Mitspro Fibre (enteral nutrition)',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. Clinical nutrition for tube feeding. Dispute with dietician prescription.'},
+  {id:'dsp07',name:'Cardiac Monitor charges (bedside ICU monitoring)',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. ICU monitoring should be in ICU bed charge. Escalate.'},
+  {id:'dsp08',name:'Stockings Platanium Thigh Length (anti-DVT)',cat:'Dispute (Keep in TPA)',route:'dispute',note:'NOT in IRDAI list. Post-surgical medical necessity. Dispute with surgeon prescription.'},
+];
+
+// ── INSURER ALERTS (shown when insurer selected on billing tab) ───────────
+const INS_ALERTS={
+  'Medi Assist (TPA)':'Medi Assist: Strict on all 32 IRDAI non-payables. Ensure every listed item is removed before submission.',
+  'Aditya Birla Health':'Aditya Birla: Watch for MOU tariff deductions — these are separate from IRDAI non-payables. Escalate tariff disputes within 15 days.',
+  'HDFC ERGO':'HDFC ERGO: Ensure hospital GSTIN is on all bills. Disinfection charges frequently disputed — keep in TPA and escalate.',
+  'Oriental Insurance':'Oriental Insurance (via Medi Assist): Flowtron disinfection NOT in IRDAI — dispute. Room/ICU proportionate cuts apply if patient exceeds policy room limit.',
+  'United India':'United India: RMO charges frequently deducted — attach clinical justification proactively. Check contracted room tariff rate.',
+  'National Insurance':'National Insurance: Pre-op HIV/HBsAg tests often deducted — attach surgeon pre-op protocol note for dispute.',
+  'New India Assurance':'New India Assurance: Dual-procedure billing rule — 100% primary + 50% secondary procedure. Package MRI cannot be billed separately.',
+  'Bajaj General':'Bajaj General: Large ICU room excess deductions possible (₹33k+). Inform patient of ICU limit BEFORE admission.',
+  'SBI General':'SBI General: Relatively lenient when clinical notes attached. Grouping & Cross Match to be disputed with blood bank requisition.',
+  'ICICI Lombard':'ICICI Lombard: Anti-DVT stockings (Platanium) always disputed — keep in TPA and dispute with surgeon prescription.',
+  'Care Health':'Care Health: Room rent cap strictly enforced. Ensure patient room category matches policy limit before admission.',
+  'Future Generali':'Future Generali: Mitspro MCT Oil (enteral nutrition) kept in TPA — dispute with dietician/doctor prescription.',
+  'Royal Sundaram':'Royal Sundaram: RMO charges (₹3,510) — NOT in IRDAI, keep in TPA. Dispute with duty roster and case notes.',
+  'Zuno General':'Zuno General: Check TDS deduction applicability. Submit all disputes via online portal for faster resolution.',
+  'Zurich Kotak':'Zurich Kotak: Anti-DVT stockings frequently disputed. Large TDS deductions — collect TDS certificates for tax offset.',
+  'Universal Sompo / MD India':'Universal Sompo / MD India: RMO + Intensivist charges (₹8k+) disputed — attach duty register, ICU notes and NMC registration.',
+  'Liberty General':'Liberty General: Very large disinfection charge disputes (₹67,500 seen). Attach infection control protocol. Infusion pump rental always split from drug charge.'
+};
+
+// ── INSURER DATA (from kokilaben_irdai_billing_action_guide.html — exact) ─
+const INSURERS=[
+{name:"ALL INSURERS — MASTER ACTION LIST",color:"#0f172a",note:"Items deducted across ALL your actual bills — sorted by IRDAI status",items:[
+{item:"CHG Handrub 500ml / Hand Rub / Hand Wash",irdai:"YES",action:"Remove from TPA bill. Add to patient billing section. Collect at discharge."},
+{item:"Examination Gloves / Gloves Powder Free / Latex Gloves",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Syringes – all types (2ml, 5ml, 10ml, 20ml, 50ml BD/Romson)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Needles – all gauges (16G, 18G, 22G, 23G, 24G, 26G)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Easy Bath Wet Wipes / Wipes",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Underpad Dignity 60×90cm / Bed Pan Liner",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Plain Sheet / Primewear (disposable bed linen)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Face Mask 3-ply / Surgical Mask",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Disposable Razor / Gallant Sologuard (pre-op shaving)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"ECG Electrode / Solid Gel Disp Electrode Medico MSGLT-05",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Digital Thermometer / RGB Microgen",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Spirometer 3-ball (Breathe Happy)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Urine Pot / Urine Bottle / Urometer / Measurex Romson",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Nebulizer Mask Aero Mist Adult Romson",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Diaper Adult Velcro (Kosmo) / Incontinence products",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Alcohol Swabs Nanz",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Clipper Blade 9680 3M (pre-op shaving clipper)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Barber Service / Grooming charges",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Tea / Coffee / Beverages (patient & attendant)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Bisleri / Packaged Drinking Water",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Fresh Fruit Juice / Buttermilk / Coconut Water / Juices",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Vada Pav / Poha / Bread Pakoda / Snacks (extra food)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Full Meal / Veg Sandwich / Dal Khichadi (beyond hospital diet)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Visitor Pass charges",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"MRD Charges / Medical Record Documentation",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"TPA Processing Charges",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Suction Set / IV Extension Set / Stopcock Romson (standard)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Surgical Blade 11 Swan Marton",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Sterile Water 10ml Otsuka (irrigation / flush)",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Micropore Tape 2 inch 3M / Elastic Bandage 3M / Band Aids",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Shaker Bottle for patient",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Gluco Test / Bedside Blood Glucose Test strips",irdai:"YES",action:"Remove from TPA bill. Collect from patient."},
+{item:"Tegaderm IV (8.5×10.5cm / 7×8.5cm) 3M – wound dressing",irdai:"PARTIAL",action:"Standard Tegaderm = IRDAI non-payable. Specialised silver/hydrogel dressings post-2024 update may be payable. Split bill accordingly."},
+{item:"Syringe Pump / Infusion Pump (device rental charge)",irdai:"PARTIAL",action:"Device rental = non-payable. Actual infusion drug = payable. Ensure pump charge is billed separately and collected from patient."},
+{item:"Foley Catheter / Rusch Size 14 (standard urinary)",irdai:"PARTIAL",action:"Standard Foley = IRDAI non-payable. Specialised catheters (cardiac/complex procedure) may be payable post-2024. Verify per case."},
+{item:"Safeset IV Set / Closed IV Catheter Nexiva BD / IV Cannula",irdai:"PARTIAL",action:"Basic IV sets = IRDAI non-payable. Specialised closed IV systems for complex procedures may be payable post-2024. Check per admission type."},
+{item:"Velfix Foley Fixat Device / Opsite / Leukomed (wound care)",irdai:"PARTIAL",action:"Basic wound care = non-payable. Specialised post-surgical dressings prescribed by surgeon may be payable. Segregate by item type."},
+{item:"Clinical Nutrition Consult / Dietician – Pratiksha Kadam",irdai:"PARTIAL",action:"Dietician consultation = IRDAI non-payable. If dietician is treating a clinical condition (e.g. post-bariatric, tube feeding protocol), it may be arguable. In practice all insurers deduct — collect from patient."},
+{item:"Polyflush 10ml NaCl 0.9% Prefilled / NS 100ml Flexidrip",irdai:"PARTIAL",action:"Flush solutions for line maintenance = non-payable (consumable). If used as a direct drug delivery vehicle in chemotherapy, it may be argued as payable. Collect from patient by default."},
+{item:"Blood Tubing Pre-pump Browndove / Pressure Monitoring Line",irdai:"PARTIAL",action:"Standard blood/pressure lines = IRDAI non-payable. Complex monitoring lines in ICU/cardiac may be payable under post-2024 update. Verify per case."},
+{item:"Camera Cover P777 (surgical endoscopy drape)",irdai:"PARTIAL",action:"Surgical drapes/covers = IRDAI non-payable. Collect from patient."},
+{item:"Ambulatory Glucose Monitoring (CGM sensor)",irdai:"PARTIAL",action:"Standard glucometer strip = non-payable. Ambulatory CGM for medically indicated monitoring is debatable. In practice most insurers deduct — collect from patient and dispute separately."},
+{item:"Disinfection Charges / Flowtron Disinfection (room/ICU terminal cleaning)",irdai:"NO",action:"NOT in IRDAI non-payable list. This is a hospital charge insurers sometimes reject citing non-clinical. DISPUTE — ask insurer for specific policy exclusion clause. Do NOT routinely remove from bill."},
+{item:"RMO / Duty Doctor / Medical Attendant Charges",irdai:"NO",action:"NOT in IRDAI list. Insurers deduct citing 'not separately billable'. DISPUTE with clinical justification — attach duty doctor's certificate and case notes. Keep in TPA bill."},
+{item:"Intensivist Charges (ICU specialist daily round)",irdai:"NO",action:"NOT in IRDAI list. Must be billed as a separate consultant with registration number. Dispute if rejected — attach intensivist's MCI/NMC registration and daily notes."},
+{item:"Catheterisation Fee (procedural — Dr. Bharat Jagiasi)",irdai:"NO",action:"NOT in IRDAI list. Procedural fee for catheterisation is a professional fee — payable. Dispute if deducted — attach procedure notes and doctor's billing."},
+{item:"Grouping & Cross Match (pre-op blood bank charge)",irdai:"NO",action:"NOT in IRDAI list. Pre-op crossmatch is a medically necessary test. Dispute — attach blood bank requisition. Do NOT remove from TPA bill."},
+{item:"Mitspro MCT Oil / Mitspro Fibre (clinical enteral nutrition product)",irdai:"NO",action:"NOT in IRDAI list as such. Clinical nutrition products prescribed for tube feeding are medical. Dispute with dietician/doctor prescription. Keep in TPA bill."},
+{item:"Cardiac Monitor Charges (bedside ICU monitoring)",irdai:"NO",action:"NOT in IRDAI list. ICU monitoring is part of ICU charges. Dispute — should be included in ICU bed charge, not billed separately. Escalate to insurer."},
+{item:"Stockings Platanium Thigh Length (anti-DVT — post-op)",irdai:"NO",action:"NOT in IRDAI list. Anti-DVT stockings prescribed post-surgery are medically necessary. Dispute with surgeon prescription. Do NOT remove from TPA bill."}
+]},
+{name:"Medi Assist (TPA)",color:"#1e40af",note:"Items deducted by Medi Assist across all insurer claims processed through them",items:[
+{item:"CHG Handrub 500ml 3M",irdai:"YES",action:"IRDAI confirmed. Remove from TPA bill section. Bill patient."},
+{item:"Examination Gloves Rakshak (Pk 24 / Pk 100, Medium/Small)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Gloves Powder Free Encore (6.0/6.5/7.0/7.5 inch)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Easy Bath Wet Wipes 1×10 (32cm×32cm)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Syringes – BD range (2ml/5ml/10ml/20ml/50ml all gauges)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Syringe 10ml LL 21Gx1 with Needle BD",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Insulin Syringe 1cc×40U BD Blister Pack",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"BD Syringe ABG A-line 1ml Cat 364356",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Needles (16G/18G/22G/23G/24G/26G Romson/BD)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Underpad Dignity 60cm×90cm Single Pack",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Disposable Bed Pan Liner ST Medical",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Disposable Razor Gallant/Sologuard",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Face Mask 3 Ply Rakshak Ear Loop Bx 100",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Solid Gel Disp Electrode Medico MSGLT-05",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Digital Thermometer RGB/Microgen",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Spirometer 3 Ball Breathe Happy",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Disposable Urine Bottle ST Medical / Urometer",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Nebulizer Mask Aero Mist Adult Romson",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Alcohol Swabs Nanz",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Plain Sheet 120×210cm Primewear",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Diaper Adult Velcro Med/XL Kosmo",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Bisleri 1000ml / Packaged water",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Tea / Coffee (patient & attendant)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Fresh Fruit Juice / Orange Juice / Buttermilk",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Visitor Pass charges",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"TPA Processing Charges (₹1,000–₹1,500)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"MRD Charges (₹500–₹650)",irdai:"YES",action:"IRDAI confirmed. Remove. Bill patient."},
+{item:"Clinical Nutrition Consult / Pratiksha Kadam (₹900–₹1,250)",irdai:"PARTIAL",action:"Dietician = non-payable per IRDAI. Collect from patient at discharge."},
+{item:"Tegaderm IV 3M / Leukomed / Opsite",irdai:"PARTIAL",action:"Standard = non-payable. Collect from patient. Complex cases — check post-2024 list."},
+{item:"Safeset IV Set / Closed IV Catheter Nexiva BD",irdai:"PARTIAL",action:"Standard IV set = non-payable. Collect from patient."},
+{item:"Grouping & Cross Match (blood bank pre-op)",irdai:"NO",action:"NOT in IRDAI. Medically necessary test. Dispute with insurer. Keep in TPA bill."},
+{item:"Gluco Test / Bedside glucose monitoring",irdai:"NO",action:"Borderline. If prescribed — argue as clinical monitoring. Collect from patient pending dispute."}
+]},
+{name:"Aditya Birla",color:"#b45309",note:"Items deducted specifically by Aditya Birla Health Insurance",items:[
+{item:"Tea, Coffee, Bisleri, Fresh Fruit Juice, Coconut Water, Pineapple Juice",irdai:"YES",action:"IRDAI confirmed. Remove from AB bill. Collect from patient at F&B counter."},
+{item:"Veg Sandwich / Dal Khichadi / Full Meal / Upma / Vada Pav / Bread Pakoda (extra canteen food)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Mix Fruit Bowl",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Non-medical items (₹1,174 lump sum in investigation bill)",irdai:"YES",action:"Segregate before submission. All small consumables to patient bill."},
+{item:"Syringe Pump / Infusion Pump (rental)",irdai:"PARTIAL",action:"Device rental = non-payable. Collect from patient."},
+{item:"MRD Charges / TPA Processing Charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"MOU / Tariff discount (5%) applied across items",irdai:"NO",action:"Aditya Birla MOU-based tariff deduction — NOT IRDAI. Verify current MOU rate card with AB and correct billing rates."},
+{item:"Investigation tariff deductions (CBC, blood tests above tariff)",irdai:"NO",action:"AB deducting because investigation charges exceed MOU-agreed rates. Escalate to AB admin and get revised tariff signed."},
+{item:"Room Rent excess above agreed tariff (₹1,800 deducted on ₹22,050)",irdai:"NO",action:"Tariff difference — not IRDAI issue. Room rate exceeds AB-agreed rate. Verify room category mapping in MOU."}
+]},
+{name:"HDFC ERGO",color:"#065f46",note:"Items deducted by HDFC ERGO directly (in-house, no TPA)",items:[
+{item:"Gloves / Razor / Tegaderm / Gauze / Sheet / Wipes / Handrub / Catheter / Tube / Underpad / Belt ABD",irdai:"YES",action:"IRDAI confirmed. Remove from HDFC bill section. Collect from patient."},
+{item:"Nutrition charges / RMO charges (within 'Other Expenses')",irdai:"PARTIAL",action:"RMO = NOT IRDAI non-payable, dispute. Nutrition = IRDAI non-payable, collect from patient."},
+{item:"TPA charge (within 'Other Expenses')",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Tea / Water / Coffee / Juice / A&E charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"MRD Charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Disinfection charges (within Other Expenses)",irdai:"NO",action:"NOT in IRDAI list. Dispute with HDFC ERGO. Keep in TPA bill and seek specific exclusion clause reference."},
+{item:"Room rent proportionate deduction (room above tariff)",irdai:"NO",action:"Tariff issue — not IRDAI. Ensure patient room category matches HDFC ERGO tariff before admission."},
+{item:"GSTIN missing in bills",irdai:"NO",action:"Administrative issue. Ensure hospital GSTIN is printed on all bills submitted to HDFC ERGO."}
+]},
+{name:"Oriental Insurance",color:"#1d4ed8",note:"Items deducted by Oriental Insurance via Medi Assist TPA",items:[
+{item:"All Medi Assist standard non-payable consumables (gloves, syringes, wipes, needles, underpad, etc.)",irdai:"YES",action:"IRDAI confirmed. Remove from TPA bill. Collect from patient."},
+{item:"Syringe Pump / Infusion Pump rental",irdai:"PARTIAL",action:"Collect from patient."},
+{item:"Flowtron First Day Disinfection Charge (₹750)",irdai:"NO",action:"NOT in IRDAI. Dispute. Flowtron disinfection is a clinical procedure charge — keep in TPA bill and dispute."},
+{item:"Tea, Poha (food charges)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Non-medical items lump sum ₹8,500",irdai:"YES",action:"Ensure all are from IRDAI list. Segregate and collect from patient."},
+{item:"Proportionate Room/ICU deduction (higher room chosen)",irdai:"NO",action:"NOT IRDAI. Inform patient BEFORE admission about ICU/room category to avoid proportionate cut."},
+{item:"TPA Processing + MRD",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."}
+]},
+{name:"United India",color:"#0f172a",note:"Items deducted by United India via Medi Assist TPA",items:[
+{item:"Clipper Blade 9680 3M, Gloves, BD ABG Syringe, IV Catheter Nexiva, Razor, Exam Gloves, Face Mask, Syringes, Needles, Elastic Bandage, Electrode, Sheet",irdai:"YES",action:"IRDAI confirmed. Remove from TPA bill. Collect from patient."},
+{item:"Room Rent / Nursing — Tariff rate excess (₹1,100/day deducted)",irdai:"NO",action:"NOT IRDAI. United India deducting because room rate exceeds contracted tariff. Verify United India rate card."},
+{item:"Visitor Pass (₹2,000)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"TPA Processing + MRD",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Consultant rate deduction",irdai:"NO",action:"Tariff difference — NOT IRDAI. Check consultant fee schedule in United India MOU."}
+]},
+{name:"National Insurance",color:"#0369a1",note:"Items deducted by National Insurance via Medi Assist TPA",items:[
+{item:"Gloves (powder free 6.0 / 7.0), Plain Sheet Salutec, Exam Gloves Rakshak, Needles, Electrodes, Syringes",irdai:"YES",action:"IRDAI confirmed. Remove from TPA bill. Collect from patient."},
+{item:"Room Rent excess (higher room opted)",irdai:"NO",action:"NOT IRDAI. Policy room rent cap exceeded. Inform patient before admission."},
+{item:"HBsAg / HIV Ab / HCV Ab pre-op screening tests (₹5,450)",irdai:"NO",action:"NOT in IRDAI list. Medically mandatory pre-op tests. DISPUTE — attach surgeon's pre-op protocol note."},
+{item:"TPA Processing + MRD",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."}
+]},
+{name:"New India Assurance",color:"#4338ca",note:"Items deducted by New India Assurance via Medi Assist TPA",items:[
+{item:"MRD Charges (₹500)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"TPA Processing Charges (₹1,000)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"MRI Fistula — 'part of package' (₹25,200)",irdai:"NO",action:"NOT IRDAI. New India deducting because MRI was bundled within a surgical package. Do not bill investigations separately when included in a package."},
+{item:"2nd Procedure excess — 50% High End Fistulectomy (₹42,650)",irdai:"NO",action:"NOT IRDAI. Package billing rule — 100% primary + 50% secondary procedure. Ensure dual procedure billing reflects this policy at pre-auth stage."},
+{item:"Deductible Amount (₹22,000)",irdai:"NO",action:"Policy structural deductible. Inform patient at admission. Collect deductible from patient before discharge."}
+]},
+{name:"Bajaj General",color:"#c2410c",note:"Items deducted by Bajaj General Insurance via Medi Assist TPA",items:[
+{item:"CHG Handrub, Wipes, Pressure Line, IV Set, Exam Gloves, Electrode, Underpad, Nebulizer, Syringes, Bed Pan, Thermometer, Spirometer",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"ICU Room excess — higher ICU opted (₹1,315 + ₹7,429 + ₹24,760)",irdai:"NO",action:"NOT IRDAI. ICU category above policy limit (₹33,505 total). Inform patient before ICU admission about their ICU limit. Collect ICU excess from patient."},
+{item:"Proportionate deduction (Room + ICU, ₹12,030)",irdai:"NO",action:"NOT IRDAI. Structural room rent issue. Prevent by ensuring room/ICU category matches policy."},
+{item:"Clinical Nutrition Consult / Pratiksha Kadam (₹1,100)",irdai:"PARTIAL",action:"Dietician = IRDAI non-payable. Collect from patient."}
+]},
+{name:"SBI General",color:"#92400e",note:"Items deducted by SBI General Insurance via Medi Assist TPA",items:[
+{item:"Clinical Nutrition Consult (₹900)",irdai:"PARTIAL",action:"Dietician = non-payable per IRDAI. Collect from patient."},
+{item:"Syringes (10ml/2ml/5ml/20ml), Wipes, Gloves, BD ABG Syringe, Tegaderm, Exam Gloves, Needles, CHG Handrub",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Bisleri water (within pharmacy bill)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"MRD Charges + TPA Processing Charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Grouping and Cross Match (₹480)",irdai:"NO",action:"NOT IRDAI. Pre-op blood bank test. Dispute with SBI General. Keep in TPA bill."},
+{item:"Miscellaneous charges ₹2,207 (full deduction)",irdai:"NO",action:"NOT itemised by SBI. Request specific rejection reason from Medi Assist. If non-IRDAI items, dispute."}
+]},
+{name:"ICICI Lombard",color:"#1e40af",note:"Items deducted by ICICI Lombard via Medi Assist TPA",items:[
+{item:"Surgical Blade 11 Swan Marton, CHG Handrub, Gloves (6.0/6.5/7.0), Exam Gloves, Face Mask, IV Set, Syringes, Diaper, Wipes, Underpad, Tegaderm, Camera Cover, Bandage, Electrode, Sheet",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Stockings Platanium Thigh Length (anti-DVT, ₹2,950)",irdai:"NO",action:"NOT in IRDAI. Anti-DVT stockings are medically prescribed post-surgery. Dispute with clinical justification. Keep in TPA bill."},
+{item:"Clinical Nutrition Consult (₹1,000)",irdai:"PARTIAL",action:"Collect from patient."},
+{item:"TPA Processing Charges (₹1,500)",irdai:"YES",action:"Remove. Collect from patient."},
+{item:"Visitor Pass (₹2,000)",irdai:"YES",action:"Remove. Collect from patient."},
+{item:"Blood Tubing Pre-pump / Pressure Monitoring Line",irdai:"PARTIAL",action:"Standard = non-payable. Collect from patient."}
+]},
+{name:"Care Health",color:"#15803d",note:"Items deducted by Care Health Insurance via Medi Assist TPA",items:[
+{item:"CHG Handrub, BD ABG Syringe, Exam Gloves, Face Mask, IV Flush Polyflush, IV Set Safeset, Syringes, Tegaderm, Nebulizer, Wipes",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Proportionate Room Rent Deduction (₹2,526)",irdai:"NO",action:"NOT IRDAI. Room rent exceeded Care Health limit. Ensure patient room matches policy limit before admission."},
+{item:"Clinical Nutrition Consult (₹1,000)",irdai:"PARTIAL",action:"Collect from patient."},
+{item:"TPA Processing + MRD",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."}
+]},
+{name:"Future Generali",color:"#166534",note:"Items deducted by Future Generali India Insurance via Medi Assist TPA",items:[
+{item:"Clipper Blade 9680 3M, Sterile Water 10ml, Velfix, BD ABG Syringe, IV Catheter Nexiva, Wipes, Exam Gloves, Syringes, MCT Oil, Underpad, Polyflush, Razor, Face Mask, Foley Catheter, Urometer",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Mitspro MCT Oil (clinical enteral nutrition)",irdai:"NO",action:"NOT standard IRDAI non-payable. Prescribed clinical nutrition product. Dispute with dietician/doctor prescription. Keep in TPA bill."},
+{item:"Tea, Visitor Pass, Shaker Bottle",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"TPA Processing + MRD",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Catheterisation Fee / Dr. Bharat Jagiasi (₹2,320)",irdai:"NO",action:"NOT IRDAI. Professional procedure fee. Dispute — attach procedure note and doctor credentials."},
+{item:"Clinical Nutrition Consult / Pratiksha Kadam (₹1,250)",irdai:"PARTIAL",action:"Collect from patient."}
+]},
+{name:"Royal Sundaram",color:"#b91c1c",note:"Items deducted by Royal Sundaram via Medi Assist TPA",items:[
+{item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Foley Catheter / Catheters (₹2,408)",irdai:"PARTIAL",action:"Standard Foley = non-payable. Collect from patient. Specialised cardiac catheter = payable, dispute."},
+{item:"Vada Pav food charge + tax on food",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"MRD Charges + TPA Processing Charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"RMO Charges (₹3,510)",irdai:"NO",action:"NOT in IRDAI. Dispute with Royal Sundaram. RMO is a medical professional charge — keep in TPA bill. Attach duty roster and case notes."}
+]},
+{name:"Zuno General",color:"#7c2d12",note:"Items deducted by Zuno General Insurance via Medi Assist TPA",items:[
+{item:"CHG Handrub, Wipes, Gloves (7.0/7.5/6.5), Exam Gloves, Underpad, Needles, Diaper Adult",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Bisleri, Tea, Fresh Fruit Juice, Buttermilk, Orange Juice",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"TPA Processing Charges + MRD Charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Hospital Discount + TDS (large)",irdai:"NO",action:"Tariff and tax issue. Not IRDAI. Verify TDS deduction applicability and hospital discount MOU with Zuno."}
+]},
+{name:"Zurich Kotak",color:"#6b21a8",note:"Items deducted by Zurich Kotak General Insurance via Medi Assist TPA",items:[
+{item:"CHG Handrub 500ml, Examination Gloves Rakshak",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Room Rent / Nursing tariff excess (₹1,700)",irdai:"NO",action:"NOT IRDAI. Tariff difference above Zurich Kotak contracted rate. Verify rate card."},
+{item:"Full Meal, Veg Sandwich",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"TPA Processing + MRD Charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"TDS (₹24,201 — large)",irdai:"NO",action:"Tax deduction at source. Not IRDAI. TDS on hospital payments above threshold is mandatory. Ensure TDS certificates are collected from insurer for income tax offset."}
+]},
+{name:"Universal Sompo / MD India",color:"#0f766e",note:"Items deducted via MD India TPA for Universal Sompo",items:[
+{item:"Velfix / Urometer / Examination Gloves / Face Mask / Handrub / Wipes / Thermometer / Urine Bottle",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"RMO / Medical Attendant / Duty Doctor (₹4,500 + ₹4,717)",irdai:"NO",action:"NOT in IRDAI. Dispute — attach duty doctor register and case notes. Do not remove from TPA bill."},
+{item:"Intensivist Charges (₹4,000)",irdai:"NO",action:"NOT in IRDAI. Dispute — attach intensivist's daily ICU notes and MCI/NMC registration."},
+{item:"TPA Charges + Medical Records",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."}
+]},
+{name:"Liberty General",color:"#9f1239",note:"Items deducted by Liberty General Insurance via Medi Assist TPA",items:[
+{item:"Urine Pot, Opsite, Listerine Mouthwash, Thermometer, Hand Wash, Creams/Lotions, Hand Rub",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Blood Set / Drip Set / 3-way Extension / Tegaderm / Leukomed / Gloves / IV Sets / Syringes / Bandages / Needles (₹1.9L in pharma)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Food Charges – non-patient diet (₹9,757)",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Disinfection Charge (₹67,500 — very high)",irdai:"NO",action:"NOT in IRDAI. This is a very large charge — Liberty deducted it entirely. Dispute. Attach infection control protocol documentation urgently."},
+{item:"MRD Charges",irdai:"YES",action:"IRDAI confirmed. Remove. Collect from patient."},
+{item:"Sum Insured / Policy cap deduction (₹23.1L short)",irdai:"NO",action:"Policy limit exhausted. No IRDAI relevance. Patient or employer must arrange balance. Kokilaben should have been informed at pre-auth itself."}
+]}
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let tpaB={},patB={},pf='all',pending=null;
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+(function(){
+  const n=new Date();
+  document.getElementById('hdr-date').textContent=n.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('pa').valueAsDate=n;
+  document.getElementById('pd').valueAsDate=n;
+  renderPicker();
+  buildGuide();
+})();
+
+// ── PAGE ───────────────────────────────────────────────────────────────────
+function goPage(id,btn){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on');
+  btn.classList.add('on');
+}
+
+// ── INSURER ALERT ──────────────────────────────────────────────────────────
+function onInsurerChange(){
+  const ins=document.getElementById('pi').value;
+  const al=document.getElementById('ins-alert');
+  if(ins && INS_ALERTS[ins]){al.textContent='⚠ '+INS_ALERTS[ins];al.style.display='block';}
+  else{al.style.display='none';}
+}
+
+// ── PICKER ─────────────────────────────────────────────────────────────────
+function setPF(r,el){pf=r;document.querySelectorAll('.ft').forEach(t=>t.classList.remove('on'));el.classList.add('on');filterP();}
+function filterP(){
+  const q=document.getElementById('psearch').value.toLowerCase();
+  const g={};
+  ALL_ITEMS.forEach(item=>{
+    if(pf!=='all'&&item.route!==pf)return;
+    if(q&&!item.name.toLowerCase().includes(q)&&!item.cat.toLowerCase().includes(q))return;
+    if(!g[item.cat])g[item.cat]=[];
+    g[item.cat].push(item);
+  });
+  renderPicker(g);
+}
+function renderPicker(g){
+  if(!g){g={};ALL_ITEMS.forEach(item=>{if(pf!=='all'&&item.route!==pf)return;if(!g[item.cat])g[item.cat]=[];g[item.cat].push(item);});}
+  const el=document.getElementById('plist');
+  if(!Object.keys(g).length){el.innerHTML='<div class="bempty">No items match</div>';return;}
+  el.innerHTML='';
+  const rcM={tpa:'rc-tpa',pat:'rc-pat',partial:'rc-prt',dispute:'rc-dsp'};
+  const lbM={tpa:'T',pat:'P',partial:'?',dispute:'!'};
+  for(const[cat,items] of Object.entries(g)){
+    const grp=document.createElement('div');grp.className='cg';
+    grp.innerHTML=`<div class="clbl">${cat}</div>`;
+    items.forEach(item=>{
+      const inT=!!tpaB[item.id],inP=!!patB[item.id];
+      const sc=inT?'s-tpa':inP?'s-pat':'';
+      const d=document.createElement('div');
+      d.className=`mi ${sc}`;
+      d.innerHTML=`<div class="rc ${rcM[item.route]||''}">${lbM[item.route]||'·'}</div>
+        <div class="mi-name">${item.name}${item.note?`<span class="mi-note">${item.note.substring(0,58)}…</span>`:''}</div>
+        <button class="mi-add" onclick="handlePick('${item.id}')">${inT||inP?'✓':'+'}</button>`;
+      grp.appendChild(d);
+    });
+    el.appendChild(grp);
+  }
+}
+
+// ── PICK ───────────────────────────────────────────────────────────────────
+function handlePick(id){
+  const item=ALL_ITEMS.find(i=>i.id===id);if(!item)return;
+  if(tpaB[id]){delete tpaB[id];refresh();return;}
+  if(patB[id]){delete patB[id];refresh();return;}
+  if(item.route==='tpa')addTo('tpa',item);
+  else if(item.route==='pat')addTo('pat',item);
+  else if(item.route==='dispute'){addTo('tpa',item);showToast('⚠ Dispute item: '+item.name.substring(0,40)+'… kept in TPA bill.');}
+  else if(item.route==='partial')openM(item);
+}
+function addTo(p,item){(p==='tpa'?tpaB:patB)[item.id]={...item,qty:1,amt:0};refresh();}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openM(item){pending=item;document.getElementById('modal-name').textContent=item.name;document.getElementById('modal-note').textContent=item.note||'';document.getElementById('modal').classList.add('open');}
+function resolveM(p){if(pending)addTo(p,pending);closeM();}
+function closeM(){document.getElementById('modal').classList.remove('open');pending=null;}
+
+// ── BILLS ──────────────────────────────────────────────────────────────────
+function renderB(p){
+  const b=p==='tpa'?tpaB:patB;
+  const el=document.getElementById(p+'-items');
+  const cn=document.getElementById(p+'-cnt');
+  const entries=Object.values(b);
+  cn.textContent=entries.length+' item'+(entries.length!==1?'s':'');
+  if(!entries.length){el.innerHTML=`<div class="bempty">${p==='tpa'?'TPA-payable items appear here':'IRDAI non-payable items appear here'}</div>`;return;}
+  el.innerHTML=entries.map(item=>`
+    <div class="brow">
+      <div class="brow-name">${item.name}<span class="brow-cat">${item.cat}</span></div>
+      <input class="bqty" type="number" min="1" value="${item.qty}" title="Qty" onchange="updB('${p}','${item.id}','qty',this.value)"/>
+      <input class="bamt" type="number" min="0" value="${item.amt||''}" placeholder="₹ amt" title="Amount" onchange="updB('${p}','${item.id}','amt',this.value)"/>
+      <button class="brm" onclick="remB('${p}','${item.id}')">✕</button>
+    </div>`).join('');
+}
+function updB(p,id,f,v){const b=p==='tpa'?tpaB:patB;if(b[id])b[id][f]=parseFloat(v)||0;recalc();}
+function remB(p,id){if(p==='tpa')delete tpaB[id];else delete patB[id];refresh();}
+
+// ── RECALC ─────────────────────────────────────────────────────────────────
+function recalc(){
+  const tS=Object.values(tpaB).reduce((s,i)=>s+(i.amt||0)*(i.qty||1),0);
+  const pS=Object.values(patB).reduce((s,i)=>s+(i.amt||0)*(i.qty||1),0);
+  const cop=parseFloat(document.getElementById('copay').value)||0;
+  const pF=pS+cop,grand=tS+pF;
+  const f=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+  document.getElementById('tpa-tot').textContent=f(tS);
+  document.getElementById('pat-tot').textContent=f(pF);
+  document.getElementById('s-tpa').textContent=f(tS);
+  document.getElementById('s-tpa-n').textContent=Object.keys(tpaB).length+' items';
+  document.getElementById('s-pat').textContent=f(pF);
+  document.getElementById('s-pat-n').textContent=Object.keys(patB).length+' items';
+  document.getElementById('s-grand').textContent=f(grand);
+  document.getElementById('s-prev').textContent=f(pS);
+}
+function refresh(){renderB('tpa');renderB('pat');recalc();filterP();}
+function clearBill(){if(!confirm('Clear all billed items?'))return;tpaB={};patB={};document.getElementById('copay').value='';refresh();}
+
+// ── GUIDE (exact rendering from kokilaben_irdai_billing_action_guide.html) ─
+function buildGuide(){
+  const tabsBar=document.getElementById('ins-tabs');
+  const container=document.getElementById('ins-views');
+  INSURERS.forEach((ins,i)=>{
+    const btn=document.createElement('button');
+    btn.className='ins-tab'+(i===0?' active':'');
+    btn.textContent=ins.name.split('—')[0].trim().substring(0,22);
+    btn.onclick=(e)=>{
+      document.querySelectorAll('.ins-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.iview').forEach(v=>v.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      document.getElementById('iview-'+i).classList.add('active');
+    };
+    tabsBar.appendChild(btn);
+    const div=document.createElement('div');
+    div.className='iview'+(i===0?' active':'');
+    div.id='iview-'+i;
+    const yI=ins.items.filter(x=>x.irdai==='YES');
+    const pI=ins.items.filter(x=>x.irdai==='PARTIAL');
+    const nI=ins.items.filter(x=>x.irdai==='NO');
+    div.innerHTML=`
+      <div class="sum-boxes">
+        <div class="sbox">
+          <div class="sbox-title" style="color:#166534">✅ IRDAI Non-Payable (${yI.length} items) — Remove from TPA bill, collect from patient</div>
+          <ul class="sbox-list">${yI.map(x=>`<li class="li-g">${x.item}</li>`).join('')}</ul>
+        </div>
+        <div class="sbox">
+          <div class="sbox-title" style="color:#92400e">⚠️ Partial / Conditional (${pI.length} items) — Check per case</div>
+          <ul class="sbox-list">${pI.map(x=>`<li class="li-a"><b>${x.item}</b><br><span style="font-size:10px;color:#78350f">${x.action}</span></li>`).join('')}</ul>
+        </div>
+        <div class="sbox">
+          <div class="sbox-title" style="color:#b91c1c">❌ NOT in IRDAI (${nI.length} items) — Dispute with insurer, keep in TPA bill</div>
+          <ul class="sbox-list">${nI.map(x=>`<li class="li-r"><b>${x.item}</b><br><span style="font-size:10px;color:#991b1b">${x.action}</span></li>`).join('')}</ul>
+        </div>
+      </div>
+      <div class="ins-card">
+        <div class="ins-hdr" style="background:${ins.color}">📋 ${ins.name} — Full Item-wise Action List</div>
+        <div style="font-size:10px;color:#475569;padding:8px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0">${ins.note}</div>
+        <div class="col-hdrs">
+          <div class="col-h">Item Found in Your Actual Bills</div>
+          <div class="col-h">IRDAI Status</div>
+          <div class="col-h">Kokilaben Action</div>
+        </div>
+        ${ins.items.map(item=>{
+          const bg=item.irdai==='YES'?'#f0fdf4':item.irdai==='PARTIAL'?'#fffbeb':'#fff5f5';
+          return`<div class="item-row" style="background:${bg}">
+            <div class="cell">${item.item}</div>
+            <div class="cell"><span class="badge ${item.irdai==='YES'?'badge-g':item.irdai==='PARTIAL'?'badge-a':'badge-r'}">${item.irdai==='YES'?'✅ In IRDAI':item.irdai==='PARTIAL'?'⚠️ Partial':'❌ Not in IRDAI'}</span></div>
+            <div class="cell ${item.irdai==='YES'?'act-g':item.irdai==='PARTIAL'?'act-a':'act-r'}">${item.action}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),4000);
+}
+</script>
+</body>
+</html>
