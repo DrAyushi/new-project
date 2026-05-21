@@ -1,0 +1,433 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; font-size: 12px; }
+.topbar { background: #0f172a; color: #fff; padding: 14px 18px; }
+.topbar h1 { font-size: 15px; font-weight: 700; }
+.topbar p { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+.legend { display: flex; gap: 10px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+.leg { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dot-green { background: #16a34a; }
+.dot-red { background: #ef4444; }
+.dot-amber { background: #f59e0b; }
+.tabs { display: flex; gap: 2px; padding: 10px 16px 0; background: #fff; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
+.tab { padding: 7px 13px; font-size: 11px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: #64748b; background: none; border-top: none; border-left: none; border-right: none; white-space: nowrap; }
+.tab.active { color: #1e40af; border-bottom-color: #1e40af; }
+.view { display: none; padding: 14px 16px; } .view.active { display: block; }
+.ins-header { font-size: 13px; font-weight: 700; padding: 10px 14px; border-radius: 8px 8px 0 0; color: #fff; }
+.ins-card { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
+.col-headers { display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 0; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+.col-h { padding: 7px 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
+.item-row { display: grid; grid-template-columns: 2fr 1fr 1.5fr; gap: 0; border-bottom: 1px solid #f8fafc; }
+.item-row:last-child { border-bottom: none; }
+.item-row:hover { background: #fafafa; }
+.cell { padding: 7px 12px; font-size: 11px; line-height: 1.5; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+.badge-green { background: #dcfce7; color: #166534; }
+.badge-red { background: #fee2e2; color: #b91c1c; }
+.badge-amber { background: #fef3c7; color: #92400e; }
+.action-green { font-size: 10px; color: #15803d; line-height: 1.5; }
+.action-red { font-size: 10px; color: #b91c1c; line-height: 1.5; }
+.action-amber { font-size: 10px; color: #92400e; line-height: 1.5; }
+/* master table */
+.master-table { width: 100%; border-collapse: collapse; }
+.master-table th { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; padding: 8px 12px; background: #fff; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; text-align: left; white-space: nowrap; }
+.master-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px; vertical-align: top; }
+.master-table tr:hover td { background: #fafbfc; }
+.ins-dots { display: flex; gap: 3px; flex-wrap: wrap; }
+.ins-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; cursor: default; }
+.summary-boxes { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 18px; }
+.sbox { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
+.sbox-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 8px; }
+.sbox-list { list-style: none; }
+.sbox-list li { font-size: 11px; padding: 3px 0; border-bottom: 1px dashed #f1f5f9; display: flex; align-items: flex-start; gap: 6px; line-height: 1.5; }
+.sbox-list li::before { content: '•'; flex-shrink: 0; }
+.li-green::before { color: #16a34a; }
+.li-red::before { color: #ef4444; }
+.li-amber::before { color: #f59e0b; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Kokilaben — Insurance Non-Payable Items vs IRDAI Mapping</h1>
+  <p>Extracted from your 25 actual TPA settlement letters · Goal: Remove before billing → collect from patient → zero follow-up</p>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="dot dot-green"></div> In IRDAI List → Remove from TPA bill, collect from patient at discharge</div>
+  <div class="leg"><div class="dot dot-amber"></div> Partially in IRDAI / Insurer-specific → Verify policy, collect from patient</div>
+  <div class="leg"><div class="dot dot-red"></div> NOT in IRDAI → Dispute with insurer / Seek justification before removing</div>
+</div>
+
+<div class="tabs" id="tabs-bar"></div>
+<div id="views-container"></div>
+
+<script>
+const INSURERS = [
+{
+  name: "ALL INSURERS — MASTER ACTION LIST",
+  color: "#0f172a",
+  note: "Items deducted across ALL your actual bills — sorted by IRDAI status",
+  items: [
+    // ── IRDAI CONFIRMED NON-PAYABLES ──
+    { item:"CHG Handrub 500ml / Hand Rub / Hand Wash", irdai:"YES", action:"Remove from TPA bill. Add to patient billing section. Collect at discharge." },
+    { item:"Examination Gloves / Gloves Powder Free / Latex Gloves", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Syringes – all types (2ml, 5ml, 10ml, 20ml, 50ml BD/Romson)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Needles – all gauges (16G, 18G, 22G, 23G, 24G, 26G)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Easy Bath Wet Wipes / Wipes", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Underpad Dignity 60×90cm / Bed Pan Liner", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Plain Sheet / Primewear (disposable bed linen)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Face Mask 3-ply / Surgical Mask", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Disposable Razor / Gallant Sologuard (pre-op shaving)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"ECG Electrode / Solid Gel Disp Electrode Medico MSGLT-05", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Digital Thermometer / RGB Microgen", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Spirometer 3-ball (Breathe Happy)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Urine Pot / Urine Bottle / Urometer / Measurex Romson", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Nebulizer Mask Aero Mist Adult Romson", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Diaper Adult Velcro (Kosmo) / Incontinence products", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Alcohol Swabs Nanz", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Clipper Blade 9680 3M (pre-op shaving clipper)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Barber Service / Grooming charges", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Tea / Coffee / Beverages (patient & attendant)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Bisleri / Packaged Drinking Water", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Fresh Fruit Juice / Buttermilk / Coconut Water / Juices", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Vada Pav / Poha / Bread Pakoda / Snacks (extra food)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Full Meal / Veg Sandwich / Dal Khichadi (beyond hospital diet)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Visitor Pass charges", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"MRD Charges / Medical Record Documentation", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"TPA Processing Charges", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Suction Set / IV Extension Set / Stopcock Romson (standard)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Surgical Blade 11 Swan Marton", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Sterile Water 10ml Otsuka (irrigation / flush)", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Micropore Tape 2 inch 3M / Elastic Bandage 3M / Band Aids", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Shaker Bottle for patient", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    { item:"Gluco Test / Bedside Blood Glucose Test strips", irdai:"YES", action:"Remove from TPA bill. Collect from patient." },
+    // ── IRDAI — PARTIAL / CONDITIONAL ──
+    { item:"Tegaderm IV (8.5×10.5cm / 7×8.5cm) 3M – wound dressing", irdai:"PARTIAL", action:"Standard Tegaderm = IRDAI non-payable. Specialised silver/hydrogel dressings post-2024 update may be payable. Split bill accordingly." },
+    { item:"Syringe Pump / Infusion Pump (device rental charge)", irdai:"PARTIAL", action:"Device rental = non-payable. Actual infusion drug = payable. Ensure pump charge is billed separately and collected from patient." },
+    { item:"Foley Catheter / Rusch Size 14 (standard urinary)", irdai:"PARTIAL", action:"Standard Foley = IRDAI non-payable. Specialised catheters (cardiac/complex procedure) may be payable post-2024. Verify per case." },
+    { item:"Safeset IV Set / Closed IV Catheter Nexiva BD / IV Cannula", irdai:"PARTIAL", action:"Basic IV sets = IRDAI non-payable. Specialised closed IV systems for complex procedures may be payable post-2024. Check per admission type." },
+    { item:"Velfix Foley Fixat Device / Opsite / Leukomed (wound care)", irdai:"PARTIAL", action:"Basic wound care = non-payable. Specialised post-surgical dressings prescribed by surgeon may be payable. Segregate by item type." },
+    { item:"Clinical Nutrition Consult / Dietician – Pratiksha Kadam", irdai:"PARTIAL", action:"Dietician consultation = IRDAI non-payable. If dietician is treating a clinical condition (e.g. post-bariatric, tube feeding protocol), it may be arguable. In practice all insurers deduct — collect from patient." },
+    { item:"Polyflush 10ml NaCl 0.9% Prefilled / NS 100ml Flexidrip", irdai:"PARTIAL", action:"Flush solutions for line maintenance = non-payable (consumable). If used as a direct drug delivery vehicle in chemotherapy, it may be argued as payable. Collect from patient by default." },
+    { item:"Blood Tubing Pre-pump Browndove / Pressure Monitoring Line", irdai:"PARTIAL", action:"Standard blood/pressure lines = IRDAI non-payable. Complex monitoring lines in ICU/cardiac may be payable under post-2024 update. Verify per case." },
+    { item:"Camera Cover P777 (surgical endoscopy drape)", irdai:"PARTIAL", action:"Surgical drapes/covers = IRDAI non-payable. Collect from patient." },
+    { item:"Ambulatory Glucose Monitoring (CGM sensor)", irdai:"PARTIAL", action:"Standard glucometer strip = non-payable. Ambulatory CGM for medically indicated monitoring is debatable. In practice most insurers deduct — collect from patient and dispute separately." },
+    // ── NOT IN IRDAI — DISPUTABLE ──
+    { item:"Disinfection Charges / Flowtron Disinfection (room/ICU terminal cleaning)", irdai:"NO", action:"NOT in IRDAI non-payable list. This is a hospital charge insurers sometimes reject citing non-clinical. DISPUTE — ask insurer for specific policy exclusion clause. Do NOT routinely remove from bill." },
+    { item:"RMO / Duty Doctor / Medical Attendant Charges", irdai:"NO", action:"NOT in IRDAI list. Insurers deduct citing 'not separately billable'. DISPUTE with clinical justification — attach duty doctor's certificate and case notes. Keep in TPA bill." },
+    { item:"Intensivist Charges (ICU specialist daily round)", irdai:"NO", action:"NOT in IRDAI list. Must be billed as a separate consultant with registration number. Dispute if rejected — attach intensivist's MCI/NMC registration and daily notes." },
+    { item:"Catheterisation Fee (procedural — Dr. Bharat Jagiasi)", irdai:"NO", action:"NOT in IRDAI list. Procedural fee for catheterisation is a professional fee — payable. Dispute if deducted — attach procedure notes and doctor's billing." },
+    { item:"Grouping & Cross Match (pre-op blood bank charge)", irdai:"NO", action:"NOT in IRDAI list. Pre-op crossmatch is a medically necessary test. Dispute — attach blood bank requisition. Do NOT remove from TPA bill." },
+    { item:"Mitspro MCT Oil / Mitspro Fibre (clinical enteral nutrition product)", irdai:"NO", action:"NOT in IRDAI list as such. Clinical nutrition products prescribed for tube feeding are medical. Dispute with dietician/doctor prescription. Keep in TPA bill." },
+    { item:"Cardiac Monitor Charges (bedside ICU monitoring)", irdai:"NO", action:"NOT in IRDAI list. ICU monitoring is part of ICU charges. Dispute — should be included in ICU bed charge, not billed separately. Escalate to insurer." },
+    { item:"Stockings Platanium Thigh Length (anti-DVT — post-op)", irdai:"NO", action:"NOT in IRDAI list. Anti-DVT stockings prescribed post-surgery are medically necessary. Dispute with surgeon prescription. Do NOT remove from TPA bill." },
+  ]
+},
+{
+  name: "Medi Assist (TPA)",
+  color: "#1e40af",
+  note: "Items deducted by Medi Assist across all insurer claims processed through them",
+  items: [
+    { item:"CHG Handrub 500ml 3M (HZD/2W)", irdai:"YES", action:"IRDAI confirmed. Remove from TPA bill section. Bill patient." },
+    { item:"Examination Gloves Rakshak (Pk 24 / Pk 100, Medium/Small)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Gloves Powder Free Encore (6.0/6.5/7.0/7.5 inch)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Easy Bath Wet Wipes 1×10 (32cm×32cm)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Syringes – BD range (2ml/5ml/10ml/20ml/50ml all gauges)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Syringe 10ml LL 21Gx1 with Needle BD", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Insulin Syringe 1cc×40U BD Blister Pack", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"BD Syringe ABG A-line 1ml Cat 364356", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Needles (16G/18G/22G/23G/24G/26G Romson/BD)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Underpad Dignity 60cm×90cm Single Pack", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Disposable Bed Pan Liner ST Medical", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Disposable Razor Gallant/Sologuard", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Face Mask 3 Ply Rakshak Ear Loop Bx 100", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Solid Gel Disp Electrode Medico MSGLT-05", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Digital Thermometer RGB/Microgen", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Spirometer 3 Ball Breathe Happy", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Disposable Urine Bottle ST Medical / Urometer", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Nebulizer Mask Aero Mist Adult Romson", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Alcohol Swabs Nanz", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Plain Sheet 120×210cm Primewear", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Diaper Adult Velcro Med/XL Kosmo", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Bisleri 1000ml / Packaged water", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Tea / Coffee (patient & attendant)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Fresh Fruit Juice / Orange Juice / Buttermilk", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Visitor Pass charges", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"TPA Processing Charges (₹1,000–₹1,500)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"MRD Charges (₹500–₹650)", irdai:"YES", action:"IRDAI confirmed. Remove. Bill patient." },
+    { item:"Clinical Nutrition Consult / Pratiksha Kadam (₹900–₹1,250)", irdai:"PARTIAL", action:"Dietician = non-payable per IRDAI. Collect from patient at discharge. Add to non-payable patient bill." },
+    { item:"Tegaderm IV 3M / Leukomed / Opsite", irdai:"PARTIAL", action:"Standard = non-payable. Collect from patient. Complex cases — check post-2024 list." },
+    { item:"Safeset IV Set / Closed IV Catheter Nexiva BD", irdai:"PARTIAL", action:"Standard IV set = non-payable. Collect from patient." },
+    { item:"Grouping & Cross Match (blood bank pre-op)", irdai:"NO", action:"NOT in IRDAI. Medically necessary test. Dispute with insurer. Keep in TPA bill." },
+    { item:"Gluco Test / Bedside glucose monitoring", irdai:"NO", action:"Borderline. If prescribed — argue as clinical monitoring. Collect from patient pending dispute." },
+  ]
+},
+{
+  name: "Aditya Birla",
+  color: "#b45309",
+  note: "Items deducted specifically by Aditya Birla Health Insurance (in-house processing)",
+  items: [
+    { item:"Tea, Coffee, Bisleri, Fresh Fruit Juice, Coconut Water, Pineapple Juice", irdai:"YES", action:"IRDAI confirmed. Remove from AB bill. Collect from patient at F&B counter." },
+    { item:"Veg Sandwich / Dal Khichadi / Full Meal / Upma / Vada Pav / Bread Pakoda (extra canteen food)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Mix Fruit Bowl", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Non-medical items (₹1,174 lump sum in investigation bill)", irdai:"YES", action:"Segregate before submission. All small consumables to patient bill." },
+    { item:"Syringe Pump / Infusion Pump (rental)", irdai:"PARTIAL", action:"Device rental = non-payable. Collect from patient." },
+    { item:"MRD Charges / TPA Processing Charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"MOU / Tariff discount (5%) applied across items", irdai:"NO", action:"This is Aditya Birla's MOU-based tariff deduction — NOT an IRDAI non-payable. This means your hospital rates are above the agreed MOU tariff. Verify your current MOU rate card with AB and correct billing rates." },
+    { item:"Investigation tariff deductions (CBC, blood tests above tariff)", irdai:"NO", action:"NOT IRDAI non-payable. AB deducting because your investigation charges exceed MOU-agreed rates. Escalate to AB admin and get revised tariff signed." },
+    { item:"Room Rent excess above agreed tariff (₹1,800 deducted on ₹22,050)", irdai:"NO", action:"Tariff difference — not IRDAI issue. Room rate exceeds AB-agreed rate. Verify room category mapping in MOU. Dispute or correct." },
+  ]
+},
+{
+  name: "HDFC ERGO",
+  color: "#065f46",
+  note: "Items deducted by HDFC ERGO directly (in-house, no TPA)",
+  items: [
+    { item:"Gloves / Razor / Tegaderm / Gauze / Sheet / Wipes / Handrub / Catheter / Tube / Underpad / Belt ABD", irdai:"YES", action:"IRDAI confirmed. Remove from HDFC bill section. Collect from patient." },
+    { item:"Nutrition charges / RMO charges (within 'Other Expenses')", irdai:"PARTIAL", action:"RMO = NOT IRDAI non-payable, dispute. Nutrition = IRDAI non-payable, collect from patient." },
+    { item:"TPA charge (within 'Other Expenses')", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Tea / Water / Coffee / Juice / A&E charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"MRD Charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Disinfection charges (within Other Expenses)", irdai:"NO", action:"NOT in IRDAI list. Dispute with HDFC ERGO. Keep in TPA bill and seek specific exclusion clause reference." },
+    { item:"Room rent proportionate deduction (room above tariff)", irdai:"NO", action:"Tariff issue — not IRDAI. Ensure patient room category matches HDFC ERGO tariff before admission." },
+    { item:"GSTIN missing in bills", irdai:"NO", action:"Administrative issue noted by HDFC. Ensure hospital GSTIN is printed on all bills submitted to HDFC ERGO." },
+  ]
+},
+{
+  name: "Oriental Insurance",
+  color: "#1d4ed8",
+  note: "Items deducted by Oriental Insurance via Medi Assist TPA",
+  items: [
+    { item:"All Medi Assist standard non-payable consumables (gloves, syringes, wipes, needles, underpad, etc.)", irdai:"YES", action:"IRDAI confirmed. Remove from TPA bill. Collect from patient." },
+    { item:"Syringe Pump / Infusion Pump rental", irdai:"PARTIAL", action:"Collect from patient." },
+    { item:"Flowtron First Day Disinfection Charge (₹750)", irdai:"NO", action:"NOT in IRDAI. Dispute. Flowtron disinfection is a clinical procedure charge — keep in TPA bill and dispute." },
+    { item:"Tea, Poha (food charges)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Non-medical items lump sum ₹8,500", irdai:"YES", action:"Ensure all are from IRDAI list. Segregate and collect from patient. Submit IRDAI list evidence if needed." },
+    { item:"Proportionate Room/ICU deduction (higher room chosen)", irdai:"NO", action:"NOT IRDAI non-payable. Structural policy issue. Inform patient BEFORE admission about ICU/room category to avoid proportionate cut." },
+    { item:"TPA Processing + MRD", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+  ]
+},
+{
+  name: "United India",
+  color: "#0f172a",
+  note: "Items deducted by United India via Medi Assist TPA",
+  items: [
+    { item:"Clipper Blade 9680 3M, Gloves, BD ABG Syringe, IV Catheter Nexiva, Razor, Exam Gloves, Face Mask, Syringes, Needles, Elastic Bandage, Electrode, Sheet", irdai:"YES", action:"IRDAI confirmed. Remove from TPA bill. Collect from patient." },
+    { item:"Room Rent / Nursing — Tariff rate excess (₹1,100/day deducted)", irdai:"NO", action:"NOT IRDAI non-payable. United India deducting because Kokilaben room rate exceeds their contracted tariff. Verify United India rate card and correct room billing." },
+    { item:"Visitor Pass (₹2,000)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"TPA Processing + MRD", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Consultant rate deduction", irdai:"NO", action:"Tariff difference — NOT IRDAI. United India deducting consultant charges above their contracted rate. Check consultant fee schedule in United India MOU." },
+  ]
+},
+{
+  name: "National Insurance",
+  color: "#0369a1",
+  note: "Items deducted by National Insurance via Medi Assist TPA",
+  items: [
+    { item:"Gloves (powder free 6.0 / 7.0), Plain Sheet Salutec, Exam Gloves Rakshak, Needles, Electrodes, Syringes", irdai:"YES", action:"IRDAI confirmed. Remove from TPA bill. Collect from patient." },
+    { item:"Room Rent excess (higher room opted)", irdai:"NO", action:"NOT IRDAI non-payable. Policy room rent cap exceeded. Inform patient before admission." },
+    { item:"HBsAg / HIV Ab / HCV Ab pre-op screening tests (₹5,450)", irdai:"NO", action:"NOT in IRDAI list. These are medically mandatory pre-op tests. National Insurance deducted — DISPUTE. Attach surgeon's pre-op protocol note." },
+    { item:"TPA Processing + MRD", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+  ]
+},
+{
+  name: "New India Assurance",
+  color: "#4338ca",
+  note: "Items deducted by New India Assurance via Medi Assist TPA",
+  items: [
+    { item:"MRD Charges (₹500)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"TPA Processing Charges (₹1,000)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"MRI Fistula — 'part of package' (₹25,200)", irdai:"NO", action:"NOT IRDAI. New India deducting because MRI was bundled within a surgical package and cannot be billed separately. Kokilaben action: Do not bill investigations separately when included in a package. Align billing with package definition." },
+    { item:"2nd Procedure excess — 50% High End Fistulectomy (₹42,650)", irdai:"NO", action:"NOT IRDAI. Package billing rule — when two procedures are done, New India allows 100% for primary and 50% for secondary. Kokilaben action: Ensure dual procedure billing reflects this policy at pre-auth stage." },
+    { item:"Deductible Amount (₹22,000)", irdai:"NO", action:"Policy structural deductible. Inform patient at admission. Collect deductible from patient before discharge." },
+  ]
+},
+{
+  name: "Bajaj General",
+  color: "#c2410c",
+  note: "Items deducted by Bajaj General Insurance via Medi Assist TPA",
+  items: [
+    { item:"CHG Handrub, Wipes, Pressure Line, IV Set, Exam Gloves, Electrode, Underpad, Nebulizer, Syringes, Bed Pan, Thermometer, Spirometer", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"ICU Room excess — higher ICU opted (₹1,315 + ₹7,429 + ₹24,760)", irdai:"NO", action:"NOT IRDAI. ICU category above policy limit. This is a big deduction (₹33,505). Inform patient before ICU admission about their ICU limit. Collect ICU excess from patient." },
+    { item:"Proportionate deduction (Room + ICU, ₹12,030)", irdai:"NO", action:"NOT IRDAI. Structural room rent issue. Proportionate cut applied to all associated charges. Prevent by ensuring room/ICU category matches policy." },
+    { item:"Clinical Nutrition Consult / Pratiksha Kadam (₹1,100)", irdai:"PARTIAL", action:"Dietician = IRDAI non-payable. Collect from patient." },
+  ]
+},
+{
+  name: "SBI General",
+  color: "#92400e",
+  note: "Items deducted by SBI General Insurance via Medi Assist TPA",
+  items: [
+    { item:"Clinical Nutrition Consult (₹900)", irdai:"PARTIAL", action:"Dietician = non-payable per IRDAI. Collect from patient." },
+    { item:"Syringes (10ml/2ml/5ml/20ml), Wipes, Gloves, BD ABG Syringe, Tegaderm, Exam Gloves, Needles, CHG Handrub", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Bisleri water (within pharmacy bill)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"MRD Charges + TPA Processing Charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Grouping and Cross Match (₹480)", irdai:"NO", action:"NOT IRDAI. Pre-op blood bank test. Dispute with SBI General. Keep in TPA bill." },
+    { item:"Miscellaneous charges ₹2,207 (full deduction)", irdai:"NO", action:"NOT itemised by SBI. Request specific rejection reason from Medi Assist. If non-IRDAI items, dispute." },
+  ]
+},
+{
+  name: "ICICI Lombard",
+  color: "#1e40af",
+  note: "Items deducted by ICICI Lombard via Medi Assist TPA",
+  items: [
+    { item:"Surgical Blade 11 Swan Marton, CHG Handrub, Gloves (6.0/6.5/7.0), Exam Gloves, Face Mask, IV Set, Syringes, Diaper, Wipes, Underpad, Tegaderm, Camera Cover, Bandage, Electrode, Sheet, Stockings (standard)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Stockings Platanium Thigh Length (anti-DVT, ₹2,950)", irdai:"NO", action:"NOT in IRDAI. Anti-DVT stockings are medically prescribed post-surgery. Dispute with clinical justification. Keep in TPA bill." },
+    { item:"Clinical Nutrition Consult (₹1,000)", irdai:"PARTIAL", action:"Collect from patient." },
+    { item:"TPA Processing Charges (₹1,500)", irdai:"YES", action:"Remove. Collect from patient." },
+    { item:"Visitor Pass (₹2,000)", irdai:"YES", action:"Remove. Collect from patient." },
+    { item:"Blood Tubing Pre-pump / Pressure Monitoring Line", irdai:"PARTIAL", action:"Standard = non-payable. Collect from patient." },
+  ]
+},
+{
+  name: "Care Health",
+  color: "#15803d",
+  note: "Items deducted by Care Health Insurance via Medi Assist TPA",
+  items: [
+    { item:"CHG Handrub, BD ABG Syringe, Exam Gloves, Face Mask, IV Flush Polyflush, IV Set Safeset, Syringes, Tegaderm, Nebulizer, Wipes", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Proportionate Room Rent Deduction (₹2,526)", irdai:"NO", action:"NOT IRDAI. Room rent exceeded Care Health limit. Ensure patient room matches policy limit before admission." },
+    { item:"Clinical Nutrition Consult (₹1,000)", irdai:"PARTIAL", action:"Collect from patient." },
+    { item:"TPA Processing + MRD", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+  ]
+},
+{
+  name: "Future Generali",
+  color: "#166534",
+  note: "Items deducted by Future Generali India Insurance via Medi Assist TPA",
+  items: [
+    { item:"Clipper Blade 9680 3M, Sterile Water 10ml, Velfix, BD ABG Syringe, IV Catheter Nexiva, Wipes, Exam Gloves, Syringes, MCT Oil, Underpad, Polyflush, Razor, Face Mask, Foley Catheter, Urometer", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Mitspro MCT Oil (clinical enteral nutrition)", irdai:"NO", action:"NOT standard IRDAI non-payable. Prescribed clinical nutrition product. Dispute with dietician/doctor prescription. Keep in TPA bill." },
+    { item:"Tea, Visitor Pass, Shaker Bottle", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"TPA Processing + MRD", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Catheterisation Fee / Dr. Bharat Jagiasi (₹2,320)", irdai:"NO", action:"NOT IRDAI. Professional procedure fee. Dispute — attach procedure note and doctor credentials." },
+    { item:"Clinical Nutrition Consult / Pratiksha Kadam (₹1,250)", irdai:"PARTIAL", action:"Collect from patient." },
+  ]
+},
+{
+  name: "Royal Sundaram",
+  color: "#b91c1c",
+  note: "Items deducted by Royal Sundaram via Medi Assist TPA",
+  items: [
+    { item:"Band Aids, Bandages, Sterile Injections, Needles, Syringes", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Foley Catheter / Catheters (₹2,408)", irdai:"PARTIAL", action:"Standard Foley = non-payable. Collect from patient. Specialised cardiac catheter = payable, dispute." },
+    { item:"Vada Pav food charge + tax on food", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"MRD Charges + TPA Processing Charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"RMO Charges (₹3,510)", irdai:"NO", action:"NOT in IRDAI. Dispute with Royal Sundaram. RMO is a medical professional charge — keep in TPA bill. Attach duty roster and case notes." },
+  ]
+},
+{
+  name: "Zuno General",
+  color: "#7c2d12",
+  note: "Items deducted by Zuno General Insurance via Medi Assist TPA",
+  items: [
+    { item:"CHG Handrub, Wipes, Gloves (7.0/7.5/6.5), Exam Gloves, Underpad, Needles, Diaper Adult", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Bisleri, Tea, Fresh Fruit Juice, Buttermilk, Orange Juice", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"TPA Processing Charges + MRD Charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Hospital Discount + TDS (large)", irdai:"NO", action:"Tariff and tax issue. Not IRDAI. Verify TDS deduction applicability and hospital discount MOU with Zuno." },
+  ]
+},
+{
+  name: "Zurich Kotak",
+  color: "#6b21a8",
+  note: "Items deducted by Zurich Kotak General Insurance via Medi Assist TPA",
+  items: [
+    { item:"CHG Handrub 500ml, Examination Gloves Rakshak", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Room Rent / Nursing tariff excess (₹1,700)", irdai:"NO", action:"NOT IRDAI. Tariff difference above Zurich Kotak contracted rate. Verify rate card." },
+    { item:"Full Meal, Veg Sandwich", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"TPA Processing + MRD Charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"TDS (₹24,201 — large)", irdai:"NO", action:"Tax deduction at source. Not IRDAI. TDS on hospital payments above threshold is mandatory. Ensure TDS certificates are collected from insurer for income tax offset." },
+  ]
+},
+{
+  name: "Universal Sompo / MD India",
+  color: "#0f766e",
+  note: "Items deducted via MD India TPA for Universal Sompo",
+  items: [
+    { item:"Velfix / Urometer / Examination Gloves / Face Mask / Handrub / Wipes / Thermometer / Urine Bottle", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"RMO / Medical Attendant / Duty Doctor (₹4,500 + ₹4,717)", irdai:"NO", action:"NOT in IRDAI. Dispute — attach duty doctor register and case notes. Do not remove from TPA bill." },
+    { item:"Intensivist Charges (₹4,000)", irdai:"NO", action:"NOT in IRDAI. Dispute — attach intensivist's daily ICU notes and MCI/NMC registration." },
+    { item:"TPA Charges + Medical Records", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+  ]
+},
+{
+  name: "Liberty General",
+  color: "#9f1239",
+  note: "Items deducted by Liberty General Insurance via Medi Assist TPA",
+  items: [
+    { item:"Urine Pot, Opsite, Listerine Mouthwash, Thermometer, Hand Wash, Creams/Lotions, Hand Rub", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Blood Set / Drip Set / 3-way Extension / Tegaderm / Leukomed / Gloves / IV Sets / Syringes / Bandages / Needles (₹1.9L in pharma)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Food Charges – non-patient diet (₹9,757)", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Disinfection Charge (₹67,500 — very high)", irdai:"NO", action:"NOT in IRDAI. This is a very large charge — Liberty deducted it entirely. Dispute. Attach infection control protocol documentation. This charge needs clinical/admin justification urgently." },
+    { item:"MRD Charges", irdai:"YES", action:"IRDAI confirmed. Remove. Collect from patient." },
+    { item:"Sum Insured / Policy cap deduction (₹23.1L short)", irdai:"NO", action:"Policy limit exhausted. No IRDAI relevance. Patient or employer must arrange balance. Kokilaben should have been informed at pre-auth itself." },
+  ]
+}
+];
+
+function renderAll(){
+  const tabsBar = document.getElementById('tabs-bar');
+  const container = document.getElementById('views-container');
+  INSURERS.forEach((ins, i)=>{
+    const btn = document.createElement('button');
+    btn.className='tab'+(i===0?' active':'');
+    btn.textContent = ins.name.split('—')[0].trim().substring(0,22);
+    btn.onclick=(e)=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      document.getElementById('view-'+i).classList.add('active');
+    };
+    tabsBar.appendChild(btn);
+
+    const div = document.createElement('div');
+    div.className='view'+(i===0?' active':'');
+    div.id='view-'+i;
+    const yesItems=ins.items.filter(x=>x.irdai==='YES');
+    const partItems=ins.items.filter(x=>x.irdai==='PARTIAL');
+    const noItems=ins.items.filter(x=>x.irdai==='NO');
+    div.innerHTML=`
+      <div class="summary-boxes">
+        <div class="sbox">
+          <div class="sbox-title" style="color:#166534">✅ IRDAI Non-Payable (${yesItems.length} items) — Remove from TPA bill, collect from patient</div>
+          <ul class="sbox-list">${yesItems.map(x=>`<li class="li-green">${x.item}</li>`).join('')}</ul>
+        </div>
+        <div class="sbox">
+          <div class="sbox-title" style="color:#92400e">⚠️ Partial / Conditional (${partItems.length} items) — Check per case</div>
+          <ul class="sbox-list">${partItems.map(x=>`<li class="li-amber"><b>${x.item}</b><br><span style="font-size:10px;color:#78350f">${x.action}</span></li>`).join('')}</ul>
+        </div>
+        <div class="sbox">
+          <div class="sbox-title" style="color:#b91c1c">❌ NOT in IRDAI (${noItems.length} items) — Dispute with insurer, keep in TPA bill</div>
+          <ul class="sbox-list">${noItems.map(x=>`<li class="li-red"><b>${x.item}</b><br><span style="font-size:10px;color:#991b1b">${x.action}</span></li>`).join('')}</ul>
+        </div>
+      </div>
+      <div class="ins-card">
+        <div class="ins-header" style="background:${ins.color}">📋 ${ins.name} — Full Item-wise Action List</div>
+        <div style="font-size:10px;color:#475569;padding:8px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0">${ins.note}</div>
+        <div class="col-headers">
+          <div class="col-h">Item Found in Your Actual Bills</div>
+          <div class="col-h">IRDAI Status</div>
+          <div class="col-h">Kokilaben Action</div>
+        </div>
+        ${ins.items.map(item=>{
+          const bg = item.irdai==='YES'?'#f0fdf4':item.irdai==='PARTIAL'?'#fffbeb':'#fff5f5';
+          return `<div class="item-row" style="background:${bg}">
+            <div class="cell">${item.item}</div>
+            <div class="cell"><span class="badge ${item.irdai==='YES'?'badge-green':item.irdai==='PARTIAL'?'badge-amber':'badge-red'}">${item.irdai==='YES'?'✅ In IRDAI':item.irdai==='PARTIAL'?'⚠️ Partial':'❌ Not in IRDAI'}</span></div>
+            <div class="cell ${item.irdai==='YES'?'action-green':item.irdai==='PARTIAL'?'action-amber':'action-red'}">${item.action}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+renderAll();
+</script>
+</body>
+</html>

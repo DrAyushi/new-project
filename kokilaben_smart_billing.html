@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kokilaben — Smart Billing</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #18181b;
+  --ink2: #3f3f46;
+  --ink3: #71717a;
+  --ink4: #a1a1aa;
+  --paper: #fafafa;
+  --surface: #ffffff;
+  --border: #e4e4e7;
+  --border2: #d4d4d8;
+  --tpa-bg: #eff6ff;
+  --tpa-mid: #3b82f6;
+  --tpa-dark: #1d4ed8;
+  --tpa-border: #bfdbfe;
+  --pat-bg: #f0fdf4;
+  --pat-mid: #22c55e;
+  --pat-dark: #15803d;
+  --pat-border: #bbf7d0;
+  --amber-bg: #fffbeb;
+  --amber: #d97706;
+  --amber-border: #fde68a;
+  --red-bg: #fef2f2;
+  --red: #dc2626;
+  --red-border: #fecaca;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: #f4f4f5; color: var(--ink); font-size: 14px; }
+
+/* TOP BAR */
+.topbar {
+  background: var(--ink);
+  color: white;
+  padding: 0 1.5rem;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 200;
+}
+.topbar-brand { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.topbar-badge { background: #e95c2e; color: white; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 3px; letter-spacing: 0.06em; }
+.topbar-right { display: flex; gap: 8px; align-items: center; }
+.topbar-btn {
+  background: transparent; border: 1px solid #444; color: white;
+  font-family: var(--sans); font-size: 11px; padding: 5px 12px; border-radius: 5px; cursor: pointer;
+}
+.topbar-btn:hover { background: #333; }
+.topbar-btn.primary { background: #e95c2e; border-color: #e95c2e; }
+.topbar-btn.primary:hover { background: #c94d22; }
+
+/* PATIENT BAR */
+.patient-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 1.5rem;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+}
+.pf { display: flex; flex-direction: column; gap: 3px; }
+.pf label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink3); font-weight: 500; }
+.pf input, .pf select {
+  font-family: var(--sans); font-size: 12px;
+  border: 1px solid var(--border2); border-radius: 5px;
+  padding: 5px 8px; background: var(--paper); color: var(--ink);
+  outline: none; min-width: 120px;
+}
+.pf input:focus, .pf select:focus { border-color: var(--tpa-mid); }
+.pf.wide input, .pf.wide select { min-width: 180px; }
+
+/* THREE-COLUMN LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 0;
+  height: calc(100vh - 112px);
+  overflow: hidden;
+}
+
+/* LEFT: MASTER ITEM PICKER */
+.picker {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.picker-head {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.picker-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.search-wrap { position: relative; }
+.search-wrap input {
+  width: 100%; font-family: var(--sans); font-size: 13px;
+  border: 1px solid var(--border2); border-radius: 7px;
+  padding: 7px 10px 7px 32px; outline: none; background: var(--paper);
+}
+.search-wrap input:focus { border-color: var(--tpa-mid); }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--ink4); }
+.filter-tabs { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.ftab {
+  font-size: 10px; font-weight: 500; padding: 3px 9px; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--paper);
+  cursor: pointer; color: var(--ink3); transition: all 0.1s;
+  white-space: nowrap;
+}
+.ftab.active { background: var(--ink); color: white; border-color: var(--ink); }
+.ftab.tpa-f.active { background: var(--tpa-dark); border-color: var(--tpa-dark); }
+.ftab.pat-f.active { background: var(--pat-dark); border-color: var(--pat-dark); }
+.ftab.partial-f.active { background: var(--amber); border-color: var(--amber); }
+.ftab.dispute-f.active { background: var(--red); border-color: var(--red); }
+
+/* ITEM LIST IN PICKER */
+.picker-list { overflow-y: auto; flex: 1; padding: 6px; }
+.cat-group { margin-bottom: 4px; }
+.cat-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ink4); padding: 8px 6px 4px; display: flex; align-items: center; gap: 6px;
+}
+.cat-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.master-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 6px; cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  margin-bottom: 2px;
+}
+.master-item:hover { background: #f4f4f5; }
+.master-item.selected { background: var(--tpa-bg); border-color: var(--tpa-border); }
+.master-item.selected.pat { background: var(--pat-bg); border-color: var(--pat-border); }
+.master-item.selected.partial { background: var(--amber-bg); border-color: var(--amber-border); }
+.master-item.selected.dispute { background: var(--red-bg); border-color: var(--red-border); }
+.item-route {
+  width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+}
+.route-tpa { background: var(--tpa-dark); color: white; }
+.route-pat { background: var(--pat-dark); color: white; }
+.route-partial { background: var(--amber); color: white; }
+.route-dispute { background: var(--red); color: white; }
+.route-dot { background: var(--border); color: var(--ink4); }
+.mi-name { flex: 1; font-size: 12px; line-height: 1.4; color: var(--ink2); }
+.mi-note { font-size: 10px; color: var(--ink4); display: block; margin-top: 1px; }
+.mi-add {
+  background: none; border: 1px solid var(--border2); border-radius: 5px;
+  color: var(--ink3); font-size: 18px; width: 26px; height: 26px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; line-height: 1; transition: all 0.1s; font-family: var(--sans);
+}
+.master-item:hover .mi-add { border-color: var(--tpa-mid); color: var(--tpa-dark); background: var(--tpa-bg); }
+.master-item.selected .mi-add { background: var(--tpa-dark); border-color: var(--tpa-dark); color: white; }
+.master-item.selected.pat .mi-add { background: var(--pat-dark); border-color: var(--pat-dark); color: white; }
+
+/* RIGHT: BILLS AREA */
+.bills-area {
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* BILLS TOP ROW */
+.bills-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0; flex: 1; overflow: hidden;
+}
+.bill-panel {
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--border);
+}
+.bill-panel + .bill-panel { border-left: 1px solid var(--border); }
+
+.bill-head {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.bill-head.tpa { background: var(--tpa-bg); }
+.bill-head.pat { background: var(--pat-bg); }
+.bill-head-icon {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 13px;
+}
+.bill-head-icon.tpa { background: var(--tpa-dark); color: white; }
+.bill-head-icon.pat { background: var(--pat-dark); color: white; }
+.bill-head-text { flex: 1; }
+.bill-head-title { font-size: 12px; font-weight: 600; }
+.bill-head-title.tpa { color: var(--tpa-dark); }
+.bill-head-title.pat { color: var(--pat-dark); }
+.bill-head-sub { font-size: 10px; color: var(--ink3); }
+.bill-count { font-size: 10px; color: var(--ink4); font-family: var(--mono); }
+
+.bill-items { flex: 1; overflow-y: auto; padding: 6px; min-height: 0; }
+.bill-empty { padding: 20px; text-align: center; color: var(--ink4); font-size: 12px; }
+
+.billed-item {
+  display: grid;
+  grid-template-columns: 1fr 52px 80px 20px;
+  gap: 5px; align-items: center;
+  padding: 5px 6px; border-radius: 5px;
+  font-size: 12px; margin-bottom: 2px;
+  border: 1px solid transparent;
+}
+.billed-item:hover { background: var(--paper); border-color: var(--border); }
+.billed-item-name { color: var(--ink2); line-height: 1.3; }
+.billed-item-name small { display: block; font-size: 10px; color: var(--ink4); }
+.billed-qty {
+  font-family: var(--mono); font-size: 12px; text-align: center;
+  border: 1px solid var(--border2); border-radius: 4px; padding: 3px 4px;
+  background: var(--paper); width: 100%;
+}
+.billed-amt {
+  font-family: var(--mono); font-size: 12px; text-align: right;
+  border: 1px solid var(--border2); border-radius: 4px; padding: 3px 6px;
+  background: var(--paper); width: 100%;
+}
+.billed-rm {
+  background: none; border: none; color: var(--ink4); cursor: pointer;
+  font-size: 13px; padding: 2px; border-radius: 3px; line-height: 1;
+}
+.billed-rm:hover { background: var(--red-bg); color: var(--red); }
+
+.bill-foot {
+  border-top: 1px solid var(--border);
+  padding: 8px 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.bill-foot-label { font-size: 11px; color: var(--ink3); }
+.bill-foot-amt { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.bill-foot-amt.tpa { color: var(--tpa-dark); }
+.bill-foot-amt.pat { color: var(--pat-dark); }
+
+/* SUMMARY BAR */
+.summary-bar {
+  background: var(--ink);
+  color: white;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid #333;
+}
+.sum-cell {
+  padding: 10px 14px;
+  border-right: 1px solid #333;
+}
+.sum-cell:last-child { border-right: none; }
+.sum-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+.sum-val { font-family: var(--mono); font-size: 15px; font-weight: 500; }
+.sum-val.tpa { color: #93c5fd; }
+.sum-val.pat { color: #86efac; }
+.sum-val.grand { color: #fbbf24; }
+.sum-val.deduct { color: #fca5a5; }
+.sum-sub { font-size: 10px; color: #666; margin-top: 1px; }
+
+/* PARTIAL MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 500;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 12px; padding: 1.5rem;
+  max-width: 440px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.modal h3 { font-size: 15px; margin-bottom: 6px; }
+.modal p { font-size: 12px; color: var(--ink3); line-height: 1.6; margin-bottom: 1rem; }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btn {
+  flex: 1; padding: 8px; border-radius: 7px; font-family: var(--sans);
+  font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+  transition: all 0.12s;
+}
+.modal-btn.tpa { background: var(--tpa-bg); color: var(--tpa-dark); border: 1px solid var(--tpa-border); }
+.modal-btn.tpa:hover { background: var(--tpa-dark); color: white; }
+.modal-btn.pat { background: var(--pat-bg); color: var(--pat-dark); border: 1px solid var(--pat-border); }
+.modal-btn.pat:hover { background: var(--pat-dark); color: white; }
+.modal-btn.cancel { background: var(--paper); color: var(--ink3); border: 1px solid var(--border); }
+.modal-note { background: var(--amber-bg); border: 1px solid var(--amber-border); border-radius: 7px; padding: 8px 10px; font-size: 11px; color: var(--amber); margin-bottom: 1rem; line-height: 1.5; }
+.modal-note.red { background: var(--red-bg); border-color: var(--red-border); color: var(--red); }
+
+/* PRINT STYLES */
+@media print {
+  .picker, .topbar, .filter-tabs, .search-wrap, .summary-bar { display: none !important; }
+  .layout { grid-template-columns: 1fr; height: auto; }
+  .bills-grid { grid-template-columns: 1fr 1fr; }
+  .bill-panel { overflow: visible; }
+  .bill-items { overflow: visible; }
+  .billed-rm, .billed-qty, .billed-amt { display: none !important; }
+  .billed-item { grid-template-columns: 1fr auto auto; }
+  .billed-amt-print { display: block !important; font-family: var(--mono); font-size: 12px; text-align: right; }
+  body { background: white; }
+  .bills-area { overflow: visible; }
+}
+.billed-amt-print { display: none; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <span>Kokilaben Hospital</span>
+    <span class="topbar-badge">SMART BILLING</span>
+  </div>
+  <div class="topbar-right">
+    <span style="font-size:11px;color:#666;font-family:var(--mono)" id="bill-date"></span>
+    <button class="topbar-btn" onclick="clearAll()">Clear Bill</button>
+    <button class="topbar-btn primary" onclick="window.print()">Print Bills</button>
+  </div>
+</div>
+
+<!-- PATIENT BAR -->
+<div class="patient-bar">
+  <div class="pf wide"><label>Patient Name</label><input type="text" id="p-name" placeholder="Full name" /></div>
+  <div class="pf"><label>UHID / IP No.</label><input type="text" id="p-uhid" placeholder="IP-XXXXXX" /></div>
+  <div class="pf wide"><label>Insurer / TPA</label>
+    <select id="p-insurer">
+      <option value="">Select insurer</option>
+      <option>Medi Assist (TPA)</option><option>Aditya Birla Health</option>
+      <option>HDFC ERGO</option><option>Oriental Insurance</option>
+      <option>United India</option><option>National Insurance</option>
+      <option>New India Assurance</option><option>Bajaj General</option>
+      <option>SBI General</option><option>ICICI Lombard</option>
+      <option>Care Health</option><option>Future Generali</option>
+      <option>Royal Sundaram</option><option>Zuno General</option>
+      <option>Zurich Kotak</option><option>Universal Sompo / MD India</option>
+      <option>Liberty General</option>
+    </select>
+  </div>
+  <div class="pf"><label>Policy No.</label><input type="text" id="p-policy" placeholder="Policy number" /></div>
+  <div class="pf"><label>Ward / Bed</label><input type="text" id="p-ward" placeholder="e.g. ICU-3" /></div>
+  <div class="pf"><label>Admission</label><input type="date" id="p-admit" /></div>
+  <div class="pf"><label>Discharge</label><input type="date" id="p-discharge" /></div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT: MASTER PICKER -->
+  <div class="picker">
+    <div class="picker-head">
+      <div class="picker-title">📋 Master Item List — Select to bill</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search" placeholder="Search items… (e.g. syringe, gloves, OT)" oninput="filterItems()" />
+      </div>
+      <div class="filter-tabs">
+        <div class="ftab active" data-f="all" onclick="setFilter('all',this)">All items</div>
+        <div class="ftab tpa-f" data-f="tpa" onclick="setFilter('tpa',this)">TPA only</div>
+        <div class="ftab pat-f" data-f="pat" onclick="setFilter('pat',this)">Patient only</div>
+        <div class="ftab partial-f" data-f="partial" onclick="setFilter('partial',this)">⚠ Partial</div>
+        <div class="ftab dispute-f" data-f="dispute" onclick="setFilter('dispute',this)">✕ Dispute</div>
+      </div>
+    </div>
+    <div class="picker-list" id="picker-list"></div>
+  </div>
+
+  <!-- RIGHT: BILLS AREA -->
+  <div class="bills-area">
+    <div class="bills-grid">
+
+      <!-- TPA BILL -->
+      <div class="bill-panel">
+        <div class="bill-head tpa">
+          <div class="bill-head-icon tpa">T</div>
+          <div class="bill-head-text">
+            <div class="bill-head-title tpa">TPA / Insurance Bill</div>
+            <div class="bill-head-sub">Send to insurer for reimbursement</div>
+          </div>
+          <span class="bill-count" id="tpa-count">0 items</span>
+        </div>
+        <div class="bill-items" id="tpa-items">
+          <div class="bill-empty">Items you select from the list will<br>auto-route here or to Patient Bill</div>
+        </div>
+        <div class="bill-foot">
+          <span class="bill-foot-label">TPA Claim Total</span>
+          <span class="bill-foot-amt tpa" id="tpa-total">₹0</span>
+        </div>
+      </div>
+
+      <!-- PATIENT BILL -->
+      <div class="bill-panel">
+        <div class="bill-head pat">
+          <div class="bill-head-icon pat">P</div>
+          <div class="bill-head-text">
+            <div class="bill-head-title pat">Patient Collection Bill</div>
+            <div class="bill-head-sub">Collect cash / card at discharge</div>
+          </div>
+          <span class="bill-count" id="pat-count">0 items</span>
+        </div>
+        <div class="bill-items" id="pat-items">
+          <div class="bill-empty">IRDAI non-payable items auto-route here</div>
+        </div>
+        <div class="bill-foot">
+          <span class="bill-foot-label">Patient Total</span>
+          <span class="bill-foot-amt pat" id="pat-total">₹0</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SUMMARY BAR -->
+    <div class="summary-bar">
+      <div class="sum-cell">
+        <div class="sum-label">TPA Claim</div>
+        <div class="sum-val tpa" id="s-tpa">₹0</div>
+        <div class="sum-sub" id="s-tpa-n">0 items</div>
+      </div>
+      <div class="sum-cell">
+        <div class="sum-label">Patient Collection</div>
+        <div class="sum-val pat" id="s-pat">₹0</div>
+        <div class="sum-sub" id="s-pat-n">0 items</div>
+      </div>
+      <div class="sum-cell">
+        <div class="sum-label">Co-pay / Deductible</div>
+        <div class="sum-val" style="display:flex;align-items:center;gap:4px;">
+          <span style="font-size:12px;color:#888">₹</span>
+          <input type="number" id="copay" placeholder="0" min="0"
+            style="background:transparent;border:none;border-bottom:1px solid #555;color:#fbbf24;font-family:var(--mono);font-size:14px;width:90px;outline:none;padding:2px 0;"
+            oninput="recalc()" />
+        </div>
+        <div class="sum-sub">Add if applicable</div>
+      </div>
+      <div class="sum-cell">
+        <div class="sum-label">Total Hospital Revenue</div>
+        <div class="sum-val grand" id="s-grand">₹0</div>
+        <div class="sum-sub">TPA + Patient</div>
+      </div>
+      <div class="sum-cell">
+        <div class="sum-label">Deductions Prevented</div>
+        <div class="sum-val deduct" id="s-prevent">₹0</div>
+        <div class="sum-sub">Items pre-routed correctly</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PARTIAL DECISION MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-item-name">Item</h3>
+    <div class="modal-note" id="modal-note">Note</div>
+    <p>This item is conditional. Where should it go for this patient?</p>
+    <div class="modal-btns">
+      <button class="modal-btn tpa" onclick="resolveModal('tpa')">→ TPA Bill</button>
+      <button class="modal-btn pat" onclick="resolveModal('pat')">→ Patient Bill</button>
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const ALL_ITEMS = [
+  // ---- TPA PAYABLE (auto-route to TPA) ----
+  { id:'tpa01', name:'Consultation charges', cat:'TPA', route:'tpa' },
+  { id:'tpa02', name:'OT charges', cat:'TPA', route:'tpa' },
+  { id:'tpa03', name:'Surgeon / Specialist fee', cat:'TPA', route:'tpa' },
+  { id:'tpa04', name:'Anaesthesia charges', cat:'TPA', route:'tpa' },
+  { id:'tpa05', name:'Nursing charges', cat:'TPA', route:'tpa' },
+  { id:'tpa06', name:'ICU charges (per day)', cat:'TPA', route:'tpa' },
+  { id:'tpa07', name:'Room rent (as per policy)', cat:'TPA', route:'tpa' },
+  { id:'tpa08', name:'Medicines / drugs', cat:'TPA', route:'tpa' },
+  { id:'tpa09', name:'Implants / prosthetics', cat:'TPA', route:'tpa' },
+  { id:'tpa10', name:'Lab investigations', cat:'TPA', route:'tpa' },
+  { id:'tpa11', name:'Radiology / imaging (X-ray, CT, MRI)', cat:'TPA', route:'tpa' },
+  { id:'tpa12', name:'Blood & blood products', cat:'TPA', route:'tpa' },
+  { id:'tpa13', name:'Physiotherapy (inpatient)', cat:'TPA', route:'tpa' },
+  { id:'tpa14', name:'Ventilator charges', cat:'TPA', route:'tpa' },
+  { id:'tpa15', name:'Dialysis charges', cat:'TPA', route:'tpa' },
+  { id:'tpa16', name:'Chemotherapy drugs', cat:'TPA', route:'tpa' },
+  { id:'tpa17', name:'Endoscopy / procedure charges', cat:'TPA', route:'tpa' },
+  { id:'tpa18', name:'Cardiology procedure charges', cat:'TPA', route:'tpa' },
+
+  // ---- IRDAI NON-PAYABLE (auto-route to Patient) ----
+  { id:'pat01', name:'CHG Handrub 500ml / Hand Rub / Hand Wash', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat02', name:'Examination Gloves / Latex Gloves / Gloves Powder Free', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat03', name:'Syringes — all types (2ml, 5ml, 10ml, 20ml, 50ml)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat04', name:'Needles — all gauges (16G, 18G, 22G, 23G, 24G, 26G)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat05', name:'Easy Bath Wet Wipes / Wipes', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat06', name:'Underpad Dignity 60×90cm / Bed Pan Liner', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat07', name:'Plain Sheet / Primewear (disposable bed linen)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat08', name:'Face Mask 3-ply / Surgical Mask', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat09', name:'Disposable Razor / Gallant Sologuard (pre-op shaving)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat10', name:'ECG Electrode / Solid Gel Disp Electrode Medico', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat11', name:'Digital Thermometer / RGB Microgen', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat12', name:'Spirometer 3-ball (Breathe Happy)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat13', name:'Urine Pot / Urine Bottle / Urometer / Measurex', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat14', name:'Nebulizer Mask Aero Mist Adult Romson', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat15', name:'Diaper Adult Velcro (Kosmo) / Incontinence products', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat16', name:'Alcohol Swabs Nanz', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat17', name:'Clipper Blade 9680 3M (pre-op shaving clipper)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat18', name:'Barber Service / Grooming charges', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat19', name:'Tea / Coffee / Beverages (patient & attendant)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat20', name:'Bisleri / Packaged Drinking Water', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat21', name:'Fresh Fruit Juice / Buttermilk / Coconut Water', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat22', name:'Vada Pav / Poha / Bread Pakoda / Extra Snacks', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat23', name:'Full Meal / beyond standard hospital diet', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat24', name:'Visitor Pass charges', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat25', name:'MRD Charges / Medical Record Documentation', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat26', name:'TPA Processing Charges', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat27', name:'Suction Set / IV Extension Set / Stopcock Romson', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat28', name:'Surgical Blade 11 Swan Marton', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat29', name:'Sterile Water 10ml Otsuka (irrigation / flush)', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat30', name:'Micropore Tape 2" 3M / Elastic Bandage / Band Aids', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat31', name:'Shaker Bottle for patient', cat:'IRDAI Non-Payable', route:'pat' },
+  { id:'pat32', name:'Gluco Test / Bedside Blood Glucose Test strips', cat:'IRDAI Non-Payable', route:'pat' },
+
+  // ---- PARTIAL (ask staff each time) ----
+  { id:'prt01', name:'Tegaderm IV 3M (wound dressing)', cat:'Partial / Verify', route:'partial', note:'Standard Tegaderm = patient. Silver/hydrogel post-2024 may be TPA. Split if needed.' },
+  { id:'prt02', name:'Syringe Pump / Infusion Pump rental', cat:'Partial / Verify', route:'partial', note:'Device rental = patient. Drug infused via pump = TPA. Bill separately.' },
+  { id:'prt03', name:'Foley Catheter / Rusch Size 14', cat:'Partial / Verify', route:'partial', note:'Standard = patient. Specialised cardiac/complex catheter may be TPA post-2024.' },
+  { id:'prt04', name:'Safeset IV Set / Nexiva BD / IV Cannula', cat:'Partial / Verify', route:'partial', note:'Basic = patient. Specialised closed IV systems for complex cases may be TPA.' },
+  { id:'prt05', name:'Velfix / Opsite / Leukomed (wound care)', cat:'Partial / Verify', route:'partial', note:'Basic wound care = patient. Surgeon-prescribed post-surgical dressings may be TPA.' },
+  { id:'prt06', name:'Clinical Nutrition Consult / Dietician Pratiksha Kadam', cat:'Partial / Verify', route:'partial', note:'Usually patient. If treating clinical condition (post-bariatric, tube feeding) arguable as TPA.' },
+  { id:'prt07', name:'Polyflush 10ml NaCl 0.9% / NS 100ml Flexidrip', cat:'Partial / Verify', route:'partial', note:'Line maintenance flush = patient. Chemo delivery vehicle may be TPA — collect by default.' },
+  { id:'prt08', name:'Blood Tubing Pre-pump / Pressure Monitoring Line', cat:'Partial / Verify', route:'partial', note:'Standard = patient. Complex ICU/cardiac monitoring lines may be TPA post-2024.' },
+  { id:'prt09', name:'Camera Cover P777 (surgical endoscopy drape)', cat:'Partial / Verify', route:'partial', note:'Surgical drapes = IRDAI non-payable. Collect from patient.' },
+  { id:'prt10', name:'Ambulatory Glucose Monitoring (CGM sensor)', cat:'Partial / Verify', route:'partial', note:'Standard strips = patient. Ambulatory CGM debatable — collect from patient, dispute separately.' },
+
+  // ---- DISPUTE (stay in TPA bill, escalate) ----
+  { id:'dsp01', name:'Disinfection / Flowtron Disinfection charges', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. Keep in TPA bill. Dispute if deducted — demand policy exclusion clause.' },
+  { id:'dsp02', name:'RMO / Duty Doctor / Medical Attendant charges', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. Keep in TPA. Dispute with duty doctor certificate and case notes.' },
+  { id:'dsp03', name:'Intensivist charges (ICU specialist daily)', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. Bill as separate consultant with NMC reg. Dispute if rejected.' },
+  { id:'dsp04', name:'Catheterisation fee — Dr. Bharat Jagiasi', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. Procedural professional fee = payable. Dispute with procedure notes.' },
+  { id:'dsp05', name:'Grouping & Cross Match (pre-op blood bank)', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. Medically necessary. Dispute — attach blood bank requisition.' },
+  { id:'dsp06', name:'Mitspro MCT Oil / Mitspro Fibre (enteral nutrition)', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. Clinical nutrition for tube feeding. Dispute with dietician prescription.' },
+  { id:'dsp07', name:'Cardiac Monitor charges (bedside ICU monitoring)', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. ICU monitoring should be in ICU bed charge. Escalate.' },
+  { id:'dsp08', name:'Stockings Platanium Thigh Length (anti-DVT)', cat:'Dispute (Keep in TPA)', route:'dispute', note:'NOT in IRDAI list. Post-surgical medical necessity. Dispute with surgeon prescription.' },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let tpaBill = {};   // id -> { ...item, qty, amt }
+let patBill = {};
+let activeFilter = 'all';
+let pendingModal = null;
+
+// ============================================================
+// INIT
+// ============================================================
+(function init() {
+  const now = new Date();
+  document.getElementById('bill-date').textContent = now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('p-admit').valueAsDate = now;
+  document.getElementById('p-discharge').valueAsDate = now;
+  renderPicker();
+})();
+
+// ============================================================
+// FILTER & RENDER PICKER
+// ============================================================
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  filterItems();
+}
+
+function filterItems() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const groups = {};
+  ALL_ITEMS.forEach(item => {
+    if (activeFilter !== 'all' && item.route !== activeFilter) return;
+    if (q && !item.name.toLowerCase().includes(q) && !item.cat.toLowerCase().includes(q)) return;
+    if (!groups[item.cat]) groups[item.cat] = [];
+    groups[item.cat].push(item);
+  });
+  renderPicker(groups);
+}
+
+function renderPicker(groups) {
+  if (!groups) {
+    // Build default groups
+    groups = {};
+    ALL_ITEMS.forEach(item => {
+      if (activeFilter !== 'all' && item.route !== activeFilter) return;
+      if (!groups[item.cat]) groups[item.cat] = [];
+      groups[item.cat].push(item);
+    });
+  }
+  const list = document.getElementById('picker-list');
+  list.innerHTML = '';
+  if (!Object.keys(groups).length) {
+    list.innerHTML = '<div class="bill-empty">No items match your search</div>';
+    return;
+  }
+  for (const [cat, items] of Object.entries(groups)) {
+    const grp = document.createElement('div');
+    grp.className = 'cat-group';
+    grp.innerHTML = `<div class="cat-label">${cat}</div>`;
+    items.forEach(item => {
+      const inTpa = !!tpaBill[item.id];
+      const inPat = !!patBill[item.id];
+      const selected = inTpa || inPat;
+      const selClass = selected ? (inTpa ? 'selected' : 'selected pat') : '';
+      const routeClass = { tpa:'route-tpa', pat:'route-pat', partial:'route-partial', dispute:'route-dispute' }[item.route] || 'route-dot';
+      const routeLabel = { tpa:'T', pat:'P', partial:'?', dispute:'!' }[item.route] || '·';
+      const addIcon = selected ? '✓' : '+';
+
+      const el = document.createElement('div');
+      el.className = `master-item ${selClass} ${selected && inPat ? 'pat' : ''} ${item.route === 'partial' ? 'partial' : ''} ${item.route === 'dispute' ? 'dispute' : ''}`;
+      el.id = 'mi-' + item.id;
+      el.innerHTML = `
+        <div class="item-route ${routeClass}">${routeLabel}</div>
+        <div class="mi-name">
+          ${item.name}
+          ${item.note ? `<span class="mi-note">${item.note.substring(0,60)}…</span>` : ''}
+        </div>
+        <button class="mi-add" onclick="handleItemClick('${item.id}')" title="Add to bill">${addIcon}</button>`;
+      grp.appendChild(el);
+    });
+    list.appendChild(grp);
+  }
+}
+
+// ============================================================
+// ITEM CLICK HANDLER
+// ============================================================
+function handleItemClick(id) {
+  const item = ALL_ITEMS.find(i => i.id === id);
+  if (!item) return;
+  // If already in a bill, remove it
+  if (tpaBill[id]) { delete tpaBill[id]; refreshAll(); return; }
+  if (patBill[id]) { delete patBill[id]; refreshAll(); return; }
+  // Route
+  if (item.route === 'tpa') { addToBill('tpa', item); }
+  else if (item.route === 'pat') { addToBill('pat', item); }
+  else if (item.route === 'dispute') { addToBill('tpa', item); showDisputeToast(item.name); }
+  else if (item.route === 'partial') { openModal(item); }
+}
+
+function addToBill(panel, item) {
+  const bill = panel === 'tpa' ? tpaBill : patBill;
+  bill[item.id] = { ...item, qty: 1, amt: 0 };
+  refreshAll();
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal(item) {
+  pendingModal = item;
+  document.getElementById('modal-item-name').textContent = item.name;
+  const noteEl = document.getElementById('modal-note');
+  noteEl.textContent = item.note || '';
+  noteEl.className = 'modal-note';
+  document.getElementById('modal').classList.add('open');
+}
+function resolveModal(panel) {
+  if (pendingModal) addToBill(panel, pendingModal);
+  closeModal();
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  pendingModal = null;
+}
+
+// ============================================================
+// DISPUTE TOAST
+// ============================================================
+function showDisputeToast(name) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;right:16px;background:#18181b;color:#fca5a5;font-size:12px;padding:8px 14px;border-radius:8px;border:1px solid #dc2626;z-index:999;font-family:var(--mono);max-width:280px;';
+  t.textContent = '⚠ ' + name + ' → kept in TPA bill. Dispute if deducted.';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ============================================================
+// RENDER BILLS
+// ============================================================
+function renderBill(panel) {
+  const bill = panel === 'tpa' ? tpaBill : patBill;
+  const el = document.getElementById(panel + '-items');
+  const countEl = document.getElementById(panel + '-count');
+  const entries = Object.values(bill);
+
+  if (!entries.length) {
+    el.innerHTML = `<div class="bill-empty">${panel === 'tpa' ? 'TPA-payable items will appear here' : 'Patient-payable items will appear here'}</div>`;
+    countEl.textContent = '0 items';
+    return;
+  }
+  countEl.textContent = entries.length + ' item' + (entries.length !== 1 ? 's' : '');
+  el.innerHTML = entries.map(item => `
+    <div class="billed-item">
+      <div class="billed-item-name">
+        ${item.name}
+        <small>${item.cat}</small>
+      </div>
+      <input class="billed-qty" type="number" min="1" value="${item.qty}"
+        onchange="updateBilledItem('${panel}','${item.id}','qty',this.value)" title="Quantity" />
+      <input class="billed-amt" type="number" min="0" value="${item.amt||''}"
+        placeholder="₹ amt" onchange="updateBilledItem('${panel}','${item.id}','amt',this.value)" title="Amount (₹)" />
+      <button class="billed-rm" onclick="removeFromBill('${panel}','${item.id}')" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+function updateBilledItem(panel, id, field, val) {
+  const bill = panel === 'tpa' ? tpaBill : patBill;
+  if (bill[id]) { bill[id][field] = parseFloat(val) || 0; }
+  recalc();
+}
+
+function removeFromBill(panel, id) {
+  if (panel === 'tpa') delete tpaBill[id];
+  else delete patBill[id];
+  refreshAll();
+}
+
+// ============================================================
+// RECALC
+// ============================================================
+function recalc() {
+  const tpaSum = Object.values(tpaBill).reduce((s,i) => s + (i.amt||0) * (i.qty||1), 0);
+  const patSum = Object.values(patBill).reduce((s,i) => s + (i.amt||0) * (i.qty||1), 0);
+  const copay = parseFloat(document.getElementById('copay').value) || 0;
+  const grand = tpaSum + patSum + copay;
+  const patFinal = patSum + copay;
+  const prevent = patSum; // items routed away from TPA = deductions prevented
+
+  const f = n => '₹' + Math.round(n).toLocaleString('en-IN');
+  document.getElementById('tpa-total').textContent = f(tpaSum);
+  document.getElementById('pat-total').textContent = f(patFinal);
+  document.getElementById('s-tpa').textContent = f(tpaSum);
+  document.getElementById('s-tpa-n').textContent = Object.keys(tpaBill).length + ' items';
+  document.getElementById('s-pat').textContent = f(patFinal);
+  document.getElementById('s-pat-n').textContent = Object.keys(patBill).length + ' items';
+  document.getElementById('s-grand').textContent = f(grand);
+  document.getElementById('s-prevent').textContent = f(prevent);
+}
+
+function refreshAll() {
+  renderBill('tpa');
+  renderBill('pat');
+  recalc();
+  filterItems(); // re-render picker to show checkmarks
+}
+
+function clearAll() {
+  if (!confirm('Clear all billed items?')) return;
+  tpaBill = {}; patBill = {};
+  document.getElementById('copay').value = '';
+  refreshAll();
+}
+</script>
+</body>
+</html>
